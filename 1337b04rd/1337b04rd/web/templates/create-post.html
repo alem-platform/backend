@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Post</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #E6E9F5;
+        }
+
+        header {
+            text-align: center;
+        }
+
+        main {
+            display: flex;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Create a New Post</h1>
+
+    <nav>
+        <!-- Navigation links -->
+        [<a href="catalog.html">Catalog</a>] |
+        [<a href="archive.html">Archive</a>]
+    </nav>
+    <br>
+</header>
+<main>
+    <form action="/submit-post" method="POST" enctype="multipart/form-data">
+        <table class="postForm">
+            <tbody>
+            <tr>
+                <td>Name</td>
+                <td>
+                    <input name="name" type="text" placeholder="Anonymous">
+                </td>
+            </tr>
+            <tr>
+                <td>Subject</td>
+                <td>
+                    <input name="subject" type="text">
+                </td>
+            </tr>
+            <tr>
+                <td>Comment</td>
+                <td>
+                    <textarea name="comment" cols="48" rows="4" placeholder="Write your post here..."></textarea>
+                </td>
+            </tr>
+            <tr>
+                <td>File</td>
+                <td>
+                    <input name="file" type="file">
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2">
+                    <input type="submit" value="Post">
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </form>
+</main>
+</body>
+</html>
