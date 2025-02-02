@@ -51,15 +51,27 @@
 
 ## Advanced Features
 
-### Full-text search is implemented effectively
+### All orginal endpoints are implemented correctly
 - [ ] Yes
 - [ ] No
 
-### Concurrent operations are handled properly (database transactions implemented)
+### Number of ordered items endpoint is implemented and works correctly with all cases (valid/invalid/no start_date, end_date;)?
 - [ ] Yes
 - [ ] No
 
-### All required endpoints are implemented correctly
+### Full-text search is implemented and works correctly (filters, min and max prices are working correctly)?
+- [ ] Yes
+- [ ] No
+
+### Ordered items by period is implemented and works correctly (validation of query parameters implemented)?
+- [ ] Yes
+- [ ] No
+
+### Get Leftovers endpoint is implemented and works correctly (pagination works correctly, response type is correct)?
+- [ ] Yes
+- [ ] No
+
+### Bulk order processing is implemented and works correctly (response type is correct and changes with different inputs)?
 - [ ] Yes
 - [ ] No
 
