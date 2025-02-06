@@ -98,6 +98,13 @@ Then read the documentation of the exchanges on how to receive market data via W
 You will also receive data from the local generator for `Test Mode`.  
 Run the `provided program` and receive information on ports `40101`, `40102`, `40103`.
 
+It is necessary to receive data about pairs of the following types:
+- `BTCUSDT`
+- `DOGEUSDT`
+- `TONUSDT`
+- `SOLUSDT`
+- `ETHUSDT`
+
 #### Additional conditions for live data handling
 
 - **Avoiding IP Bans:** The system should implement [proxy](https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/) support to prevent IP bans when fetching data from cryptocurrency exchanges.
