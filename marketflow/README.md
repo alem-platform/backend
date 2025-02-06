@@ -2,8 +2,10 @@
 
 ## Learning Objectives
 
+- Concurrency and Parallelism
 - Concurrency Patterns
-- Cache (Redis)
+- Real-time Data Processing
+- Data Caching (Redis)
 
 ## Abstract
 
@@ -16,19 +18,14 @@ This project will give you hands-on experience in **real-time data ingestion, pr
 ## Context
 
 Imagine you are building a system for a financial firm that needs real-time price updates from multiple cryptocurrency exchanges. This system must handle multiple sources of data concurrently, process updates efficiently, and provide an API for querying recent prices and market statistics.  
-This project is real (a similar project is used at the workplace of one of the graduates). It integrates into a more complex system and addresses some business challenges.
+~~This project is real (a similar project is used at the workplace of one of the graduates). It integrates into a more complex system and addresses some business challenges.~~
 To achieve this, the project will implement:
 
 - WebSocket-based real-time data fetching (Live Mode)
-
-- Locally generated test data (Test Mode)
-
+- WebSocket-based real-time test data fetching (Test Mode)
 - Concurrent data processing using channels & worker pools
-
 - Data storage in PostgreSQL
-
 - Redis caching for quick access to frequently requested prices
-
 - REST API for querying aggregated price data
 
 This project mirrors real-world applications used in trading platforms, giving you practical experience with Go’s concurrency model and backend architecture.
@@ -98,12 +95,12 @@ Choose at least two crypto exchanges [here](https://coinmarketcap.com/rankings/e
 Try to avoid exchanges that require registration to receive streaming data.  
 Then read the documentation of the exchanges on how to receive market data via WebSocket. 
 
-You will also receive data from the local generator for Test Mode.  
+You will also receive data from the local generator for `Test Mode`.  
 Run the `provided program` and receive information on ports `40101`, `40102`, `40103`.
 
 #### Additional conditions for live data handling
 
-- **Avoiding IP Bans:** The system should implement proxy support to prevent IP bans when fetching data from cryptocurrency exchanges.
+- **Avoiding IP Bans:** The system should implement [proxy](https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/) support to prevent IP bans when fetching data from cryptocurrency exchanges.
 - **Redundancy and Failover:** If a WebSocket connection fails, the system should automatically attempt to reconnect (Note: turn off your internet connection to check 😉).
 - **Proxy Support:** The system should support configurable proxies to distribute requests across multiple IPs, ensuring continuous access to exchange APIs.
 
@@ -126,7 +123,49 @@ This project heavily relies on concurrency to handle large volumes of real-time 
 
 - **Fan-out:** Distributing incoming data updates to multiple workers to process them in parallel.
 
-- **Worker Pool:** Managing a set of workers that process WebSocket updates efficiently, ensuring balanced workload distribution.
+- **[Worker Pool](https://gobyexample.com/worker-pools):** Managing a set of workers that process WebSocket updates efficiently, ensuring balanced workload distribution.
+
+Example:
+```
+
+                      +---------------+       +---------------+       +---------------+
+                      |  Source 1     |       |  Source 2     |       |  Source 3     |
+                      |  (Generator)  |       |  (Generator)  |       |  (Generator)  |
+                      +-------+-------+       +-------+-------+       +-------+-------+
+                              |                       |                       |
+                              v                       v                       v
+                      +-------+-------+       +-------+-------+       +-------+-------+
+                      |   Fan-Out 1   |       |   Fan-Out 2   |       |   Fan-Out 3   |
+                      |  (Distributor)|       |  (Distributor)|       |  (Distributor)|
+                      +---+---+---+---+       +---+---+---+---+       +---+---+---+---+
+                          |   |   |               |   |   |               |   |   |
+          +---------------+-+-+-+-+-+-------------+-+-+-+-+-+---------------------------+
+          |               | | | | | |                 | | | | | |                       |
+          v               v v v v v v                 v v v v v v                       v
+      +---+---+       +---+---+---+---+-----+       +---+---+---+---+---+---+       +---+---+
+      |Worker1|       |Worker2| ... |WorkerN|       |WorkerN+1| ... |WorkerM|      |WorkerM+1|
+      +---+---+       +---+---+---+---+-----+       +---+---+---+---+---+---+       +---+---+
+          |               |                   ...       |                   ...         |
+          +---------------+-----------------------------+-------------------------------+
+                              | (all output channels)
+                              v
+                      +-------+-------+
+                      |    Fan-In     |
+                      |  (Aggregator) |
+                      +-------+-------+
+                              | (resultCh)
+                              v
+                      +-------+-------+
+                      |   Receiver    |
+                      | (Collector)   |
+                      +---------------+
+
+```
+
+- WebSocket listeners must send updates to a shared channel.
+- Worker Pool must handle multiple concurrent updates per exchange.
+- Data must be batched (instead of per-update writes) before inserting into PostgreSQL.
+- If Redis is down, PostgreSQL should still receive data (fallback mechanism).
 
 By implementing these patterns, the system will ensure efficient data ingestion, processing, and storage, leveraging Go’s built-in concurrency primitives.
 
@@ -135,7 +174,7 @@ By implementing these patterns, the system will ensure efficient data ingestion,
 #### Real-Time Data Processing:
 
 - Use **Redis** to cache recent price data.
-- Store the latest price for all price updates from the last 1.25 minutes for each trading pair from all exchanges.
+- Keep the latest price for all price updates for at least the last minute for each trading pair from all exchanges.
 - Every minute, calculate the average price for each pair based on the last 60 seconds of data, store the result in PostgreSQL, and also save the minimum and maximum price values.
 
 You will need to decide which key and which value to save in Redis and how best to implement it.
@@ -205,6 +244,10 @@ You will need to decide which key and which value to save in Redis and how best 
 
 **Note:** it should not be possible to enable the proxy in the Test Mode.
 
+**System Health**
+
+`GET /health` - Returns system status (e.g., WebSocket connections, Redis availability).
+
 ### Configuration
 
 The application should read configuration from a file. The configuration should include the following parameters:
@@ -219,6 +262,10 @@ The application should read configuration from a file. The configuration should 
 - Use Go's log/slog package for logging throughout the application.
 - Log significant events, errors information with appropriate levels (`Info`, `Warning`, `Error`).
 - Include contextual information in logs (e.g., timestamps, IDs).
+
+### Shutdown
+
+Implement graceful shutdown handling to ensure the application cleans up resources and exits cleanly when receiving a termination signal (e.g., `SIGINT`, `SIGTERM`).
 
 ### Usage
 
@@ -242,9 +289,22 @@ Options:
 
 ## Support
 
+Believe in yourself and you will succeed.
+
 ---
 ## Guidelines from Author
 
+First of all, implement data acquisition from at least one source.  
+Study the patterns and think about how to apply them.  
+Then implement the storage of data in PostgreSQL.  
+Then implement the caching of data in Redis.  
+Then implement the API.  
+Then implement the rest of the sources.  
+Then implement the rest of the patterns.  
+Then implement the rest of the API.  
+Then implement the rest of the features.  
+
+Good luck, Buddy 😊
 
 ---
 ## Author
