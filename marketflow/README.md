@@ -166,7 +166,7 @@ Example:
 ```
 
 - Listeners must send updates to a shared channel.
-- Worker Pool must handle multiple concurrent updates per exchange.
+- Worker Pool must handle multiple concurrent updates per exchange (гse 5 workers for each data source).
 - Data must be batched (instead of per-update writes) before inserting into PostgreSQL.
 - If Redis is down, PostgreSQL should still receive data (fallback mechanism).
 
