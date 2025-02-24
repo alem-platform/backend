@@ -1,4 +1,4 @@
-# whale-with-benefits
+# whale-with-friends
 
 ## Learning Objectives
 
