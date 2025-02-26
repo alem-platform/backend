@@ -79,10 +79,16 @@ You will modify and improve the `1337b04rd` project. Your goal is to:
 
 Your applications **must read configuration files and environment variables**.
 
-- The `.env` file should store sensitive information.
-- You must manually read environment variables using `os.Getenv` (avoid external libraries for this).
-- A `.env.example` file must be included in the repository as a reference.
+The `.env` file should store sensitive information.  
+A `.env.example` file must be included in the repository as a reference.
 
+You must manually read environment variables using `os.Getenv` (avoid external libraries for this). Your program should not read `.env` files. 
+
+Add the `.env` file to docker-compose:
+```
+    env_file:
+      - .env
+```
 
 ### Configuration File Details
 The configuration should include:
