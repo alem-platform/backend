@@ -85,9 +85,9 @@ A `.env.example` file must be included in the repository as a reference.
 You must manually read environment variables using `os.Getenv` (avoid external libraries for this). Your program should not read `.env` files. 
 
 Add the `.env` file to docker-compose:
-```
-    env_file:
-      - .env
+```yaml
+env_file:
+  - .env
 ```
 
 ### Configuration File Details
