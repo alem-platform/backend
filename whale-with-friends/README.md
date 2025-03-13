@@ -96,7 +96,7 @@ The configuration should include:
 - Application port
 - `S3 storage` details (address, port, etc.) from the `1337b04rd` project
 - At least **two bucket names** in the `S3 storage`
-- External API details (if applicable)
+- External API details ([`The Rick and Morty API`](https://rickandmortyapi.com/))
 
 ### Dockerfile Requirements
 
