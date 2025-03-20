@@ -115,10 +115,9 @@ Run the `provided programs` and receive information on ports `40101`, `40102`, `
 
 - `docker load -i exchange3_amd64.tar` or `docker load -i exchange3_arm64.tar`
 
-3. Run the images:
-Example:
-- `docker run -p 40103:40103 --name exchange3-arm64 -d exchange3-arm64`
-- `docker run -p 40103:40103 --name exchange3-arm64 -d exchange3-arm64`
+3. Run the images (example):
+- `docker run -p 40101:40101 --name exchange1-arm64 -d exchange3-arm64`
+- `docker run -p 40102:40102 --name exchange2-arm64 -d exchange2-arm64`
 - `docker run -p 40103:40103 --name exchange3-arm64 -d exchange3-arm64`
 
 Try to run ```nc 127.0.0.1 <port>``` after starting the provided programs.
