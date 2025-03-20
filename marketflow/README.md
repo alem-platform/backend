@@ -97,9 +97,29 @@ You will create a `marketflow` application, a system designed to process market 
 
 You will be provided with a programs that simulates the behavior of cryptocurrency exchanges.  
 Run the `provided programs` and receive information on ports `40101`, `40102`, `40103`.  
-[exchange0](exchange0)  
-[exchange1](exchange1)  
-[exchange2](exchange2)
+[exchange1_amd64](exchange1_amd64.tar)  
+[exchange1_arm64](exchange1_arm64.tar)  
+[exchange2_amd64](exchange2_amd64.tar)  
+[exchange2_arm64](exchange2_arm64.tar)   
+[exchange3_amd64](exchange3_amd64.tar)  
+[exchange3_arm64](exchange3_arm64.tar)
+
+##### How to run the provided programs?
+
+1. Define the processor architecture.   
+2. Then load the images:
+
+- `docker load -i exchange1_amd64.tar` or `docker load -i exchange1_arm64.tar`
+
+- `docker load -i exchange2_amd64.tar` or `docker load -i exchange2_arm64.tar`
+
+- `docker load -i exchange3_amd64.tar` or `docker load -i exchange3_arm64.tar`
+
+3. Run the images:
+Example:
+- `docker run -p 40103:40103 --name exchange3-arm64 -d exchange3-arm64`
+- `docker run -p 40103:40103 --name exchange3-arm64 -d exchange3-arm64`
+- `docker run -p 40103:40103 --name exchange3-arm64 -d exchange3-arm64`
 
 Try to run ```nc 127.0.0.1 <port>``` after starting the provided programs.
 
