@@ -122,7 +122,7 @@ Run the `provided programs` and receive information on ports `40101`, `40102`, `
 
 Try to run ```nc 127.0.0.1 <port>``` after starting the provided programs.
 
-It is necessary to receive data about pairs of the following types:
+**It is necessary to receive data about pairs of the following types:**
 - `BTCUSDT`
 - `DOGEUSDT`
 - `TONUSDT`
