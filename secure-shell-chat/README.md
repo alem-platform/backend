@@ -11,19 +11,21 @@
 
 In this project, you will build an **SSH chat application**.
 
-Similar projects are used by communities, development teams, and privacy-conscious users to communicate securely in terminal environments without relying on web-based interfaces. This application will create a robust chat system accessible via SSH protocol, allowing users to connect, exchange messages and use various commands for enhanced interaction. Additionally, it will manage user sessions, message history, and secure authentication.
+Such applications are used by various communities, development teams, and privacy-conscious users to communicate securely in terminal environments without relying on web-based interfaces. This application will create a robust chat system accessible via the SSH protocol, allowing users to connect, exchange messages, and use various commands for enhanced interaction. It will also manage user sessions, message history, and secure authentication.
 
-This project will teach you how to implement secure network protocols, build interactive terminal applications, and develop real-time communication systems that are both privacy-focused and developer-friendly. You'll gain valuable experience in creating software that bridges the gap between networking fundamentals and practical user interaction.
+This project focuses on implementing secure network protocols, interactive terminal applications, and real-time communication systems that are both privacy-focused and developer-friendly. You’ll gain valuable experience in bridging networking fundamentals with practical user interaction.
 
 ## Context
+
 SSH (**S**ecure **Sh**ell) is, first of all, a secure communication protocol for the secure operation of remote systems over an unsecured network. Although SSH is designed as a security tool, there are several ways to use it to bypass certain restrictions. Beyond basic remote access, SSH serves as a foundation for building various applications for secure communication, file exchange, and other collaborative tools. Developers can leverage SSH's encrypted tunneling capabilities to create secure messaging systems, file synchronization utilities, backup solutions, and collaborative development environments, all benefiting from SSH's robust authentication and encryption mechanisms.  
 
-SSH Chat is a terminal-based real-time communication platform accessible via SSH protocol. 
+SSH Chat is a terminal-based real-time communication platform accessible via the SSH protocol. 
 
-The project is a secure, lightweight messaging system that demonstrates the basic principles of networking and concurrent programming principles.
+This project demonstrates the principles of networking and concurrent programming within a secure, lightweight messaging system.
 
 ---
 ## Resources
+
 - Read about SSH Protocol [here](https://en.wikipedia.org/wiki/Secure_Shell#Standards_documentation).
 - Read about Go SSH package [here](golang.org/x/crypto/ssh).
 
@@ -42,13 +44,14 @@ $ go build -o ssh-im .
 ```
 
 - If an error occurs during startup (e.g., invalid command-line arguments, failure to bind to a port), the program must exit with a non-zero status code and display a clear, understandable error message.
-  During normal operation, the server must handle errors gracefully, returning appropriate HTTP status codes to the client without crashing
+  During normal operation, the server must handle errors gracefully.
 
 ---
 ## Mandatory Part
 
 ### Baseline
-Your task is to develop the `SSH-IM` application, a **secure shell chat** app. It should be built using Go, emphasizing clean code and maintainability.
+
+Develop the `SSH-IM` application, a **secure shell chat** app built in Go. Focus on clean, maintainable code.
 
 ### Functional Requirements
 
@@ -59,32 +62,30 @@ The SSH Server is the core component of your application that enables secure con
 ##### Basic Server Setup
 
 - Implement an SSH server that listens on a configurable port (default: `2222`).
-- The server should be able to handle multiple concurrent client connections.
-- Your implementation must use the `golang.org/x/crypto/ssh` package.
+- The server must handle multiple concurrent client connections.
+- You must use the `golang.org/x/crypto/ssh` package.
 
 ##### Authentication
 
-- Support [public key](https://www.geeksforgeeks.org/difference-between-private-key-and-public-key/) authentication
-- Store user credentials securely (authorized keys)
-- Implement a user registration mechanism for new users
+- Support [public key](https://www.geeksforgeeks.org/difference-between-private-key-and-public-key/) authentication.
+- Store user credentials securely (authorized keys).
+- Implement new user registration with proper credential management.
 
 ##### Connection Management
 
-- Handle client connections concurrently
-- Manage active sessions and detect disconnections
-- Implement proper error handling for failed connections
-- Set appropriate timeouts for idle connections (5 minutes)
+- Handle client connections concurrently.
+- Manage active sessions and detect disconnections.
+- Implement proper error handling for failed connections.
+- Set appropriate timeouts for idle connections (5 minutes).
 
 ##### Security Configuration
 
-- Generate and use proper SSH host keys
-- Enforce strong ciphers and key exchange methods
-- Implement rate limiting to prevent brute force attacks 
-- Log authentication attempts (successful and failed)
+- Generate and use valid SSH host keys.
+- Enforce strong ciphers and key exchange methods.
+- Implement rate limiting to prevent brute force attacks.
+- Log both successful and failed authentication attempts. 
 
-**Connections must be handled efficiently. Use goroutines.**
-
-
+*Connections must be handled efficiently. Use goroutines.
 
 #### Chat Functionality
 
@@ -92,15 +93,15 @@ Chat is the other main component of your `SSH-IM` application. It allows users t
 
 ##### Message Processing
 
-- Implement a message broadcasting system to relay messages to all connected users
-- Support private messaging between specific users
-- Store message history for users to retrieve when they join
+- Implement a message broadcasting system to relay messages to all connected users.
+- Support private messaging between specific users.
+- Store message history for users to retrieve when they join.
 - The username provided as a command-line argument, extracted from the public key, or requested during connection.
-- Messages limited to 200 characters per transmission
-- UTF-8 encoding support for international character sets
-- Support for command input prefixed with `/` character
-- Implement appropriate message formatting for readability in the terminal
-- Rate limiting of 10 messages per minute per user to prevent flooding
+- Messages limited to 200 characters per transmission.
+- Use `UTF-8` encoding for international characters.
+- Support for command input prefixed with `/` character.
+- Format messages for readability in the terminal.
+- Implement a rate limit of 10 messages per minute per user to prevent flooding.
 
 ##### Chat Commands
 
@@ -115,8 +116,7 @@ Chat is the other main component of your `SSH-IM` application. It allows users t
 
 ##### Private Messages
 
-When a private message is received, it should automatically appear in the terminal in a special format that distinguishes it from regular messages.  
-Follow these requirements:
+When a private message is received, it should appear with a special format:
 
 ```
 [17:52:03] <username> (PRIVATE): message content
@@ -145,12 +145,14 @@ To send a private message to another user:
 ```
 
 #### Outcomes:
-- Establish a secure SSH-based chat system where users can connect and communicate in real time.
-- Implement user authentication and session management using SSH keys.
-- Store chat history in a database (PostgreSQL) for persistence and retrieval.
-- Utilize Go's `log/slog` package for logging authentication attempts, message deliveries, and system events.
+
+- A secure SSH-based chat system allowing real-time user interaction.
+- Proper user authentication and session management via SSH keys.
+- Chat history storage in a PostgreSQL database for persistence and retrieval.
+- Logging of authentication attempts, message deliveries, and system events using Go’s `log/slog`.
 
 #### Constraints
+
 - Handle errors gracefully and ensure proper error messages for users.
 - All actions and errors must be logged.
 
