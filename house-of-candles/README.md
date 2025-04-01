@@ -94,8 +94,8 @@ _Add new endpoints to get OHLC data for a specific exchange and symbol_
 - `GET /prices/ohlc/{exchange}/{symbol}`  
 - **Description:** Retrieves a series of OHLC (candlestick) data points for a given symbol on a specific exchange over a defined time range and interval.  
 - **Query Parameters:**
-  - `interval={duration}` (Required): The time interval for each candlestick (e.g., 10s, 1m, 5m, 1h, 1d). This should match the intervals you are storing in ClickHouse.
-  - `startTime={timestamp}` (Optional): The start timestamp (inclusive) for the data range (e.g., ISO 8601 format YYYY-MM-DDTHH:MM:SSZ or Unix timestamp). If omitted, might default to a recent period or require limit.
+  - `interval={duration}` (Required): The time interval for each candlestick (e.g., `10s`, `1m`, `5m`, `1h`, `1d`). This should match the intervals you are storing in ClickHouse.
+  - `startTime={timestamp}` (Optional): The start timestamp (inclusive) for the data range (e.g., [ISO 8601](https://www.cl.cam.ac.uk/~mgk25/iso-time.html) format `YYYY-MM-DDTHH:MM:SSZ` or Unix timestamp). If omitted, might default to a recent period or require limit.
   - `endTime={timestamp}` (Optional): The end timestamp (exclusive or inclusive - be consistent!) for the data range. If omitted, defaults to the current time.
   - `limit={integer}` (Optional): Limits the number of candlestick data points returned. Useful for fetching the most recent 'N' candles. If startTime is provided, it limits results starting from that time. If only endTime is provided, it limits results ending at that time. If neither startTime nor endTime is provided, it typically returns the latest N candles.
 - Example:  
