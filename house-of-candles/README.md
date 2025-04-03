@@ -6,16 +6,11 @@
 
 ## Abstract
 
-In this project, you will enhance your **Real-Time Market Data Processing System** ([`marketflow`](https://github.com/alem-platform/backend/tree/main/marketflow)) by replacing one of its existing technologies with a more efficient alternative.
-
-This change will improve the system's performance, enabling it to process market data more rapidly. Through this hands-on experience, you will also gain valuable skills in quickly and effectively integrating new technologies into an existing software system.
+In "house-of-candles," you’ll upgrade the `marketflow` real-time market data system by swapping out PostgreSQL for ClickHouse—a high-performance database built for analytics. Your mission is to store market price updates, cache them efficiently, and serve Japanese candlestick data through new API endpoints. This hands-on project will boost your ability to integrate cutting-edge tools into existing systems, optimize performance for large datasets, and deliver real-world financial data—all while keeping the code clean and scalable.
 
 ## Context
 
-At work, sometimes you have to replace one technology with another. C'est la vie.
-
-Business needs have changed and we need to add slightly expanded data to our database faster.  
-Now we need to change `marketflow` a bit and replace PostgreSQL with [ClickHouse](https://clickhouse.com/).
+Imagine you’re a backend developer at a fintech startup. Your team’s `marketflow` app tracks real-time cryptocurrency prices, but the PostgreSQL database is struggling with the growing volume of data. Traders need faster access to candlestick charts for quick decisions. Your task? Replace PostgreSQL with ClickHouse to handle millions of price updates efficiently and add [OHLC](https://en.wikipedia.org/wiki/Open-high-low-close_chart) endpoints for charting—all without breaking the system. This is your chance to solve a real-world problem and level up your tech skills!
 
 ## Resources
 
@@ -41,9 +36,12 @@ $ go build -o house-of-candles .
 
 ### Baseline
 
-This project, `house-of-candles`, serves as an enhancement to the `marketflow` application. The original `marketflow` system processes real-time market data and provides a RESTful API.
-
-The primary objective of the `house-of-candles` enhancement is to replace the `PostgreSQL` database with `ClickHouse` specifically for storing market data values (e.g., candle data). This involves modifying `marketflow`'s persistence layer to efficiently interact with ClickHouse for storing these values. The project must maintain the established principles of clean code, maintainability, and scalability.
+- **Goal**: Transform `marketflow` by replacing PostgreSQL with ClickHouse for market data storage, focusing on Japanese candlestick (OHLC) data.
+- **What You’ll Do**:
+  - Store price updates in ClickHouse.
+  - Add API endpoints for OHLC data.
+  - Keep `marketflow`’s clean code and scalability principles.
+- **Why ClickHouse?**: It’s fast, columnar, and perfect for aggregating large datasets—like computing OHLC from millions of price ticks.
 
 #### Japanese Candlesticks
 
@@ -68,12 +66,11 @@ Get the data the same way as in the `marketflow` project.
 
 ### Data Storage, Caching, Processing
 
-#### Real-Time Data Processing:
+#### Real-Time Processing:
 
-- Use **Redis** to cache recent price data.
-- Keep the latest price for all price updates for at least the last minute for each trading pair from all exchanges.
-- Add data to ClickHouse every 10 seconds, save each received value.
-- Ensure outdated data (older than two minutes) is purged from Redis.
+- R`edis Caching`: Store the latest price for each trading pair and exchange in Redis. Keep at least 1 minute of history.
+- `ClickHouse Storage`: Batch-insert all price updates into ClickHouse every 10 seconds.
+- `Cleanup`: Purge Redis data older than 2 minutes to save memory.
 
 #### Data Storage
 
@@ -90,49 +87,31 @@ Get the data the same way as in the `marketflow` project.
 
 _Add new endpoints to get OHLC data for a specific exchange and symbol_
 
-1. **Get OHLC data for a specific exchange and symbol:**
-- `GET /prices/ohlc/{exchange}/{symbol}`  
-- **Description:** Retrieves a series of OHLC (candlestick) data points for a given symbol on a specific exchange over a defined time range and interval.  
-- **Query Parameters:**
-  - `interval={duration}` (Required): The time interval for each candlestick (e.g., `10s`, `1m`, `5m`, `1h`, `1d`). This should match the intervals you are storing in ClickHouse.
-  - `startTime={timestamp}` (Optional): The start timestamp (inclusive) for the data range (e.g., [ISO 8601](https://www.cl.cam.ac.uk/~mgk25/iso-time.html) format `YYYY-MM-DDTHH:MM:SSZ` or Unix timestamp). If omitted, might default to a recent period or require limit.
-  - `endTime={timestamp}` (Optional): The end timestamp (exclusive or inclusive - be consistent!) for the data range. If omitted, defaults to the current time.
-  - `limit={integer}` (Optional): Limits the number of candlestick data points returned. Useful for fetching the most recent 'N' candles. If startTime is provided, it limits results starting from that time. If only endTime is provided, it limits results ending at that time. If neither startTime nor endTime is provided, it typically returns the latest N candles.
-- Example:  
-`GET /prices/ohlc/exchange2/BTCUSDT?interval=1m&limit=100` (Get the last 100 one-minute candles for BTC/USDT on `exchange2`)
-- Example:  
-`GET /prices/ohlc/exchange3/ETHUSD?interval=1h&startTime=2023-10-26T00:00:00Z&endTime=2023-10-27T00:00:00Z` (Get hourly candles for a specific day)
-- Response: An array of JSON objects, each representing a candlestick:
-```
+1. `GET /prices/ohlc/{exchange}/{symbol}`
+- **Purpose**: Fetch OHLC candles for a symbol on one exchange.
+- **Parameters**:
+  - `interval` (required): e.g., "10s", "1m", "5m".
+  - `startTime` (optional): [ISO 8601](https://www.cl.cam.ac.uk/~mgk25/iso-time.html) (e.g., "2023-10-27T00:00:00Z").
+  - `endTime` (optional): Defaults to now if omitted.
+  - `limit` (optional): Max number of candles (e.g., 100).
+- Example: `GET /prices/ohlc/exchange1/BTCUSD?interval=1m&limit=10`
+- Response:
+
+```json
 [
-  {
-    "timestamp": "2023-10-27T10:00:00Z", // Start time of the interval
-    "open": 41500.50,
-    "high": 41550.20,
-    "low": 41480.00,
-    "close": 41530.90
-  },
-  {
-    "timestamp": "2023-10-27T10:01:00Z",
-    "open": 41530.90,
-    "high": 41600.00,
-    "low": 41525.50,
-    "close": 41595.10
-  }
-  // ... more candles
+  {"timestamp": "2023-10-27T10:00:00Z", "open": 42000.0, "high": 42100.0, "low": 41950.0, "close": 42050.0},
+  {"timestamp": "2023-10-27T10:01:00Z", "open": 42050.0, "high": 42200.0, "low": 42000.0, "close": 42180.0}
 ]
 ```
 
-2. **Get OHLC data for an aggregated symbol (across exchanges):**
-   `GET /prices/ohlc/{symbol}`
-- **Description:** Retrieves a series of OHLC data points for a given symbol, aggregated across all tracked exchanges.
-- **Query Parameters:** Same as above (interval, startTime, endTime, limit).
-- **Example:**  
-`GET /prices/ohlc/BTCUSD?interval=5m&limit=50`  
-- **Response:** Same format as the exchange-specific endpoint, but the OHLC values represent the aggregated data according to your defined strategy.
+2. `GET /prices/ohlc/{symbol}`
+- **Purpose**: Fetch OHLC candles for a symbol across all exchanges.
+- **Parameters**: Same as above.
+- **Aggregation**: Treat all price updates for the symbol as one stream, then compute OHLC.
+- **Example**: `GET /prices/ohlc/BTCUSD?interval=5m&startTime=2023-10-27T00:00:00Z`
+- **Response**: Same format as above.
 
-These endpoints provide a standard way to query the time-series OHLC data necessary for drawing Japanese candlestick charts. Remember to clearly document the required interval parameter and how startTime, endTime, and limit interact.
-
+These endpoints provide a standard way to query the time-series OHLC data necessary for drawing Japanese candlestick charts.
 
 ### Configuration
 
@@ -144,7 +123,7 @@ The application should read configuration from a file. The configuration should 
 ### Logging
 
 - Use Go's `log/slog` package for logging throughout the application.
-- Log significant events, errors information with appropriate levels (`Info`, `Warning`, `Error`).
+- Log significant events, errors information with appropriate levels (`INFO`, `WARNING`, `ERROR`).
 - Include contextual information in logs (e.g., timestamps, IDs).
 
 ### Shutdown
