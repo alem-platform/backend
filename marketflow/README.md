@@ -90,8 +90,8 @@ You will create a `marketflow` application, a system designed to process market 
 - Implement concurrency patterns to efficiently process multiple price updates.
 
   - Provide REST API endpoints for retrieving price information and statistics.
-
-- An additional application provided by you for Test Mode should be able to generate data.
+  
+- An additional application provided by you for Test Mode should be able to generate data. 
 
 #### Where to get data from?
 
@@ -257,7 +257,7 @@ Do not forget to delete irrelevant data.
 
 **System Health**
 
-`GET /health` - Returns system status (e.g., connections, Redis availability).
+`GET /health` - Returns system status (e.g., connections, Redis availability).  
 
 **You need to come up with the responses yourself.**
 
