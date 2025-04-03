@@ -17,12 +17,14 @@ This project will give you hands-on experience in **real-time data ingestion, pr
 
 ## Context
 
-Imagine you are building a system for a financial firm that needs real-time price updates from multiple cryptocurrency exchanges. This system must handle multiple sources of data concurrently, process updates efficiently, and provide an API for querying recent prices and market statistics.  
-~~This project is real (a similar project is used at the workplace of one of the graduates). It integrates into a more complex system and addresses some business challenges.~~
+Imagine you're developing a system for a financial firm that requires real-time price updates from multiple cryptocurrency exchanges. The system must efficiently handle concurrent data streams, process updates in real time, and expose an API for querying recent prices and market statistics.  
+This project is real (a similar project is used at the workplace of one of the graduates). It integrates into a more complex system and addresses some business challenges.  
 To achieve this, the project will implement:
 
-- WebSocket-based real-time data fetching (Live Mode)
-- WebSocket-based real-time test data fetching (Test Mode)
+Imagine you're developing a system for a financial firm that requires real-time price updates from multiple cryptocurrency exchanges. The system must efficiently handle concurrent data streams, process updates in real time, and expose an API for querying recent prices and market statistics.
+
+- Real-time data fetching (`Live Mode`)
+- Real-time test data fetching (`Test Mode`)
 - Concurrent data processing using channels & worker pools
 - Data storage in PostgreSQL
 - Redis caching for quick access to frequently requested prices
@@ -34,7 +36,6 @@ This project mirrors real-world applications used in trading platforms, giving y
 
 - Read about Redis [here](https://redis.io/docs/latest/).
 - Read about concurrency [here](https://go.dev/doc/effective_go#concurrency), [here](https://go.dev/blog/pipelines), [here](https://dev.to/dwarvesf/approaches-to-manage-concurrent-workloads-like-worker-pools-and-pipelines-52ed) and [here](https://go.dev/talks/2012/concurrency.slide#1).
-- Read about WebSocket [here](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API).
 
 ## General Criteria
 
@@ -47,6 +48,7 @@ This project mirrors real-world applications used in trading platforms, giving y
 ```sh
 $ go build -o marketflow .
 ```
+
 - If an error occurs during startup (e.g., invalid command-line arguments, failure to bind to a port), the program must exit with a non-zero status code and display a clear, understandable error message.
   During normal operation, the server must handle errors gracefully, returning appropriate HTTP status codes to the client without crashing.
 ---
@@ -55,7 +57,7 @@ $ go build -o marketflow .
 
 ### Baseline
 
-You will create a `marketflow` application, a system designed to process market data in real-time and offer a RESTful API for accessing price updates and more. The application should follow a hexagonal software architecture. Emphasis should be placed on clean code, maintainability, and scalability to ensure a robust and efficient solution.
+You will create a `marketflow` application, a system designed to process market data in real-time and offer a RESTful API for accessing price updates and more. The application should follow a hexagonal architecture. The project should emphasize clean code, maintainability, and scalability to ensure a robust and efficient solution.
 
 #### Outcomes:
 
@@ -73,11 +75,11 @@ You will create a `marketflow` application, a system designed to process market 
 
     - Cache Adapter (Redis) for caching.
 
-    - Exchange Adapter (WebSockets) for fetching live market data.
+    - Exchange Adapter for fetching live market data.
 
 - Support two data modes:
 
-  - Live Mode: Fetch real-time prices from at least two cryptocurrency exchanges via WebSockets.
+  - Live Mode: Fetch real-time prices from three cryptocurrency exchanges.
 
   - Test Mode: Generate synthetic market data locally.
 
@@ -89,31 +91,49 @@ You will create a `marketflow` application, a system designed to process market 
 
   - Provide REST API endpoints for retrieving price information and statistics.
 
+- An additional application provided by you for Test Mode should be able to generate data.
+
 #### Where to get data from?
 
-Choose at least two crypto exchanges [here](https://coinmarketcap.com/rankings/exchanges/) or [here](https://www.coingecko.com/en/exchanges) or [elsewhere](https://duckduckgo.com/).  
-Try to avoid exchanges that require registration to receive streaming data.  
-Then read the documentation of the exchanges on how to receive market data via WebSocket.
+You will be provided with a programs that simulates the behavior of cryptocurrency exchanges.  
+Run the `provided programs` and receive information on ports `40101`, `40102`, `40103`.  
+[exchange1_amd64](exchange1_amd64.tar)  
+[exchange1_arm64](exchange1_arm64.tar)  
+[exchange2_amd64](exchange2_amd64.tar)  
+[exchange2_arm64](exchange2_arm64.tar)   
+[exchange3_amd64](exchange3_amd64.tar)  
+[exchange3_arm64](exchange3_arm64.tar)
 
-You will also receive data from the local generator for `Test Mode`.  
-Run the `provided program` and receive information on ports `40101`, `40102`, `40103`.
+##### How to run the provided programs?
+
+1. Define the CPU architecture.
+2. Then load the images:
+
+- `docker load -i exchange1_amd64.tar` or `docker load -i exchange1_arm64.tar`
+
+- `docker load -i exchange2_amd64.tar` or `docker load -i exchange2_arm64.tar`
+
+- `docker load -i exchange3_amd64.tar` or `docker load -i exchange3_arm64.tar`
+
+3. Run the images (example):
+- `docker run -p 40101:40101 --name exchange1-arm64 -d exchange3-arm64`
+- `docker run -p 40102:40102 --name exchange2-arm64 -d exchange2-arm64`
+- `docker run -p 40103:40103 --name exchange3-arm64 -d exchange3-arm64`
+
+Try to run ```nc 127.0.0.1 <port>``` after starting the provided programs.
+
+**It is necessary to receive data about pairs of the following types:**
+- `BTCUSDT`
+- `DOGEUSDT`
+- `TONUSDT`
+- `SOLUSDT`
+- `ETHUSDT`
+
+You need to implement your own test data generator for Test Mode.
 
 #### Additional conditions for live data handling
 
-- **Avoiding IP Bans:** The system should implement [proxy](https://www.cloudflare.com/learning/cdn/glossary/reverse-proxy/) support to prevent IP bans when fetching data from cryptocurrency exchanges.
-- **Redundancy and Failover:** If a WebSocket connection fails, the system should automatically attempt to reconnect (Note: turn off your internet connection to check 😉).
-- **Proxy Support:** The system should support configurable proxies to distribute requests across multiple IPs, ensuring continuous access to exchange APIs.
-
-##### Avoiding IP bans and proxy support
-
-Your program should work in several ways proxy modes:
-
-- Without a proxy.
-- Switching to a proxy when data cannot be retrieved from the exchange without it
-- Only proxy. All traffic from exchanges should go through the proxy.
-
-Q: Where to get proxies?  
-A: Use your own proxy or search the internet. [Here](https://github.com/Yariya/Zmap-ProxyScanner), for example, is a proxy search tool.
+- **Failover:** If connection fails, the system should automatically attempt to reconnect (Note: Stop and restart the provided program and/or the generator you implemented. 😉).
 
 ### Concurrency Implementation and Patterns:
 
@@ -123,7 +143,9 @@ This project heavily relies on concurrency to handle large volumes of real-time 
 
 - **Fan-out:** Distributing incoming data updates to multiple workers to process them in parallel.
 
-- **[Worker Pool](https://gobyexample.com/worker-pools):** Managing a set of workers that process WebSocket updates efficiently, ensuring balanced workload distribution.
+- **[Worker Pool](https://gobyexample.com/worker-pools):** Managing a set of workers that process live updates efficiently, ensuring balanced workload distribution.
+
+- **Generator:** Implementing a generator to produce synthetic market data for `Test Mode`.
 
 Example:
 ```
@@ -162,12 +184,17 @@ Example:
 
 ```
 
-- WebSocket listeners must send updates to a shared channel.
-- Worker Pool must handle multiple concurrent updates per exchange.
+- Listeners must send updates to a shared channel.
+- The Worker Pool should efficiently process multiple concurrent updates per exchange, allocating five workers to each data source.
 - Data must be batched (instead of per-update writes) before inserting into PostgreSQL.
 - If Redis is down, PostgreSQL should still receive data (fallback mechanism).
 
 By implementing these patterns, the system will ensure efficient data ingestion, processing, and storage, leveraging Go’s built-in concurrency primitives.
+
+#### Test Mode
+
+You need to create a program that simulates the behavior of the provided programs for `Test Mode`.
+Implement the Generator pattern to provide synthetic data.
 
 ### Data Storage and Caching
 
@@ -178,6 +205,8 @@ By implementing these patterns, the system will ensure efficient data ingestion,
 - Every minute, calculate the average price for each pair based on the last 60 seconds of data, store the result in PostgreSQL, and also save the minimum and maximum price values.
 
 You will need to decide which key and which value to save in Redis and how best to implement it.
+
+Do not forget to delete irrelevant data.
 
 #### Data Storage
 
@@ -202,7 +231,7 @@ You will need to decide which key and which value to save in Redis and how best 
 
 `GET /prices/highest/{exchange}/{symbol}` – Get the highest price over a period from a specific exchange.
 
-`GET /prices/highest/{symbol}?period={duration}` – Get the highest price within the last `{duration}` (e.g., `1s`,  `3s`, `5s`, `10s`, `30s`, `1m`, `3m`, `5m`).
+`GET /prices/highest/{symbol}?period={duration}` – Get the highest price within the last `{duration}` (e.g., the last `1s`,  `3s`, `5s`, `10s`, `30s`, `1m`, `3m`, `5m`).
 
 `GET /prices/highest/{exchange}/{symbol}?period={duration}` – Get the highest price within the last `{duration}` from a specific exchange.
 
@@ -222,40 +251,22 @@ You will need to decide which key and which value to save in Redis and how best 
 
 **Data Mode API**
 
-`POST /mode/test` – Switch to Test Mode (use generated data).
+`POST /mode/test` – Switch to `Test Mode` (use generated data).
 
-`POST /mode/live` – Switch to Live Mode (fetch data from exchanges).
-
-**Note:** active Test Mode should disable proxy.
-
-**Proxy Settings API**
-
-`GET /proxy/status` – Get the current proxy configuration status.
-
-`POST /proxy/enable` – Enable proxy usage for API requests.
-
-`POST /proxy/disable` – Disable proxy usage for API requests.
-
-`POST /proxy/set-static` – Set the proxy mode to static.
-
-`POST /proxy/set-rotating` – Set the proxy mode to rotating.
-
-`POST /proxy/set-disabled` – Disable proxy usage and remove settings.
-
-**Note:** it should not be possible to enable the proxy in the Test Mode.
+`POST /mode/live` – Switch to `Live Mode` (fetch data from `provided programs`).
 
 **System Health**
 
-`GET /health` - Returns system status (e.g., WebSocket connections, Redis availability).
+`GET /health` - Returns system status (e.g., connections, Redis availability).
+
+**You need to come up with the responses yourself.**
 
 ### Configuration
 
 The application should read configuration from a file. The configuration should include the following parameters:
 - PostgreSQL connection details (host, port, user, password, database and etc.).
 - Redis connection details (host, port, password and etc.).
-- WebSocket connection details (host, port and etc.).
-- Proxy settings (host, port and etc.).
-- Other necessary settings.
+- Connection details (host, port, etc.) for the provided exchange emulations and your test implementation.
 
 ### Logging
 
@@ -296,9 +307,9 @@ Believe in yourself and you will succeed.
 
 First of all, implement data acquisition from at least one source.  
 Study the patterns and think about how to apply them.  
-Then implement the storage of data in PostgreSQL.  
 Then implement the caching of data in Redis.  
-Then implement the API.  
+Then implement the storage of data in PostgreSQL.  
+Then partially implement the API.
 Then implement the rest of the sources.  
 Then implement the rest of the patterns.  
 Then implement the rest of the API.  
