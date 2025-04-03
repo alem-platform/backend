@@ -9,19 +9,15 @@
 
 ## Abstract
 
-In this project, you will build an **SSH chat application**.
+In this project, you will create an **SSH chat application**, a terminal-based chat application accessible via the SSH protocol. Unlike web-based chat systems, SSH-IM operates entirely in the terminal, offering a lightweight, secure, and privacy-focused way for users to communicate. You'll build a robust system that supports multiple users, public and private messaging, message history, and secure authentication—all while learning key networking and programming concepts.
 
-Such applications are used by various communities, development teams, and privacy-conscious users to communicate securely in terminal environments without relying on web-based interfaces. This application will create a robust chat system accessible via the SSH protocol, allowing users to connect, exchange messages, and use various commands for enhanced interaction. It will also manage user sessions, message history, and secure authentication.
-
-This project focuses on implementing secure network protocols, interactive terminal applications, and real-time communication systems that are both privacy-focused and developer-friendly. You’ll gain valuable experience in bridging networking fundamentals with practical user interaction.
+This project is ideal for understanding secure communication protocols, real-time systems, and concurrent programming in Go. By the end, you'll have a functional chat application that demonstrates practical skills in a developer-friendly environment.
 
 ## Context
 
-SSH (**S**ecure **Sh**ell) is, first of all, a secure communication protocol for the secure operation of remote systems over an unsecured network. Although SSH is designed as a security tool, there are several ways to use it to bypass certain restrictions. Beyond basic remote access, SSH serves as a foundation for building various applications for secure communication, file exchange, and other collaborative tools. Developers can leverage SSH's encrypted tunneling capabilities to create secure messaging systems, file synchronization utilities, backup solutions, and collaborative development environments, all benefiting from SSH's robust authentication and encryption mechanisms.  
+SSH (**S**ecure **Sh**ell) is a protocol primarily used for secure remote access over unsecured networks. Beyond logging into remote systems, SSH’s encryption and authentication features make it versatile for applications like secure messaging. In SSH-IM, you'll leverage SSH to create a chat platform where users connect using standard SSH clients (e.g., `ssh` on the command line), authenticate with public keys, and interact in real time.
 
-SSH Chat is a terminal-based real-time communication platform accessible via the SSH protocol. 
-
-This project demonstrates the principles of networking and concurrent programming within a secure, lightweight messaging system.
+This project bridges networking fundamentals with interactive application design, focusing on security and concurrency within a terminal environment.
 
 ---
 ## Resources
@@ -51,19 +47,19 @@ $ go build -o ssh-im .
 
 ### Baseline
 
-Develop the `SSH-IM` application, a **secure shell chat** app built in Go. Focus on clean, maintainable code.
+Develop the `SSH-IM` application, a **secure shell chat** app built in Go. Focus on writing clean, maintainable code that meets the functional requirements below.
 
 ### Functional Requirements
 
 #### SSH Server
 
-The SSH Server is the core component of your application that enables secure connections from clients. It will authenticate users, manage sessions, and route messages between connected clients.
+The SSH server is the backbone of SSH-IM, enabling secure client connections and managing chat sessions.
 
 ##### Basic Server Setup
 
-- Implement an SSH server that listens on a configurable port (default: `2222`).
-- The server must handle multiple concurrent client connections.
-- You must use the `golang.org/x/crypto/ssh` package.
+- **Port**: Listen on a configurable port (default: `2222`).
+- **Concurrency**: Handle multiple client connections concurrently using goroutines.
+- **Package**: Use `golang.org/x/crypto/ssh` for SSH functionality.
 
 ##### Authentication
 
@@ -71,85 +67,67 @@ The SSH Server is the core component of your application that enables secure con
 - Store user credentials securely (authorized keys).
 - Implement new user registration with proper credential management.
 
+- **Public Key Authentication**: Authenticate users using SSH [public keys](https://www.geeksforgeeks.org/difference-between-private-key-and-public-key/).
+- **User Storage**: Store usernames and their associated public keys in a PostgreSQL database table (e.g., `users: id, username, public_key`).
+- **User Registration**: Provide a mechanism to add new users. For simplicity, self-registration by clients is not required.
+- **Process**:
+  - When a client connects with `ssh username@localhost -p 2222`, the server checks if the provided public key matches one associated with username in the database.
+  - If authenticated, start a chat session; otherwise, reject the connection.
+
 ##### Connection Management
 
-- Handle client connections concurrently.
-- Manage active sessions and detect disconnections.
-- Implement proper error handling for failed connections.
-- Set appropriate timeouts for idle connections (5 minutes).
+- **Sessions**: Track active client sessions and detect disconnections.
+- **Timeouts**: Disconnect idle clients after 5 minutes.
+- **Error Handling**: Gracefully handle failed connections and log errors.
 
 ##### Security Configuration
 
-- Generate and use valid SSH host keys.
-- Enforce strong ciphers and key exchange methods.
-- Implement rate limiting to prevent brute force attacks.
-- Log both successful and failed authentication attempts. 
-
-*Connections must be handled efficiently. Use goroutines.
+- **Host Keys**: Generate and use valid SSH host keys for the server.
+- **Ciphers**: Enforce strong ciphers and key exchange methods.
+- **Rate Limiting**: Limit authentication attempts to prevent brute-force attacks (e.g., max 5 attempts per minute per IP).
+- **Logging**: Log all authentication attempts (successful and failed) with timestamps and details.
 
 #### Chat Functionality
 
-Chat is the other main component of your `SSH-IM` application. It allows users to communicate with each other in real-time through the terminal interface. This section outlines how to implement robust messaging capabilities, chat commands, and user interaction systems.
+The chat system enables real-time communication between connected users through the terminal.
 
 ##### Message Processing
 
-- Implement a message broadcasting system to relay messages to all connected users.
-- Support private messaging between specific users.
-- Store message history for users to retrieve when they join.
-- The username provided as a command-line argument, extracted from the public key, or requested during connection.
-- Messages limited to 200 characters per transmission.
-- Use `UTF-8` encoding for international characters.
-- Support for command input prefixed with `/` character.
-- Format messages for readability in the terminal.
-- Implement a rate limit of 10 messages per minute per user to prevent flooding.
+- **Broadcasting**: Relay public messages to all connected users.
+- **Private Messaging**: Allow users to send private messages to specific users.
+- **History**: Store all messages (public and private) in a PostgreSQL database table (e.g., `messages: id, sender_id, message, timestamp, is_private, recipient_id`).
+- **Username**: Derive the username from the authenticated SSH connection (based on the public key).
+- **Limits**: Restrict messages to 200 characters, encoded in UTF-8.
+- **Rate Limiting**: Enforce a limit of 10 messages per minute per user.
+- **Commands**: Process inputs starting with `/` as commands; otherwise, treat them as public messages.
+
+##### Message Formatting
+
+- **Public Messages**: [timestamp] <username>: `message`
+  - Example: [14:30:15] <alice>: `Hello everyone!`
+- **Private Messages (Sender)**: `[timestamp] * To username: message`
+  - Example: `[14:30:20] * To bob: How’s it going?`
+- **Private Messages (Recipient)**: `[timestamp] <username> (PRIVATE): message`
+  - Example: `[14:30:20] <alice> (PRIVATE): How’s it going?`
+- **System Messages**: `[timestamp] * System: message`
+  - Example: `[14:30:00] * System: Welcome alice! There are 3 users online.`
 
 ##### Chat Commands
 
-- Create a command processor that handles special instructions prefixed with `/`
-- Implement common chat commands such as:  
-  `/help` - Display available commands    
-  `/list` - Show currently connected users   
-  `/history` - Command to see recent messages  
-  `/msg` `<username>` `<message>` - Send private message  
-  `/quit` or `/exit` - Disconnect from the server
-  
+Implement these commands, processed only for the issuing user:
 
-##### Private Messages
-
-When a private message is received, it should appear with a special format:
-
-```
-[17:52:03] <username> (PRIVATE): message content
-```
-
-This formatting makes it easy to distinguish private messages from public chat messages.
-
-##### Viewing Past Private Messages
-
-To view your private message history:
-
-1. Use the `/history` command to see recent messages, including private ones.  
-```
-/history
-```
-2. To specify the number of messages to view:
-```
-/history 20
-```
-
-##### Sending Private Messages
-
-To send a private message to another user:
-```
-/msg <username> Hello, how are you?
-```
+- `/help`: List all available commands.
+- `/list`: Display all currently connected usernames (show duplicates if a user has multiple sessions).
+- `/history [N]`: Show the last N messages (default 20) that are either public or private involving the user (sender or recipient).
+- `/msg <username> <message>`: Send a private message to `<username>`. If the user is offline, display an error like `* System: User not online`.
+- `/quit` or `/exit`: Disconnect the user from the server.
 
 #### Outcomes:
 
-- A secure SSH-based chat system allowing real-time user interaction.
-- Proper user authentication and session management via SSH keys.
-- Chat history storage in a PostgreSQL database for persistence and retrieval.
-- Logging of authentication attempts, message deliveries, and system events using Go’s `log/slog`.
+- A secure, SSH-based chat system with real-time messaging.
+- Robust authentication and session management using public keys.
+- Persistent message history in PostgreSQL.
+- Comprehensive logging with `log/slog`.
 
 #### Constraints
 
@@ -159,14 +137,12 @@ To send a private message to another user:
 ### Flags/Options Support
 
 - `-p`, `--port PORT` - Specify port number (default: `2222`)
-- `-u`, `--user USERNAME` - Set username for the session
+- `--help`: Display usage information.
 
 
 ### Usage
 
 **Launching the app**
-
-Your program must be able to print usage information.
 
 ```sh
 $ ./ssh-im --help
@@ -183,11 +159,10 @@ Options:
 
 **Basic Connection**
 ```
-$ ssh-im localhost -p 2222 -u alice
-Connected to localhost
+$ ssh username@localhost -p 2222
 Welcome to SSH Chat!
-[10:22:38] * System: Welcome alice! There are 5 users online.
-[10:22:40] <bob>: Hi alice, welcome to the chat!
+[14:30:00] * System: Welcome username! There are 3 users online.
+[14:30:05] <bob>: Hey, good to see you!
 ```
 
 **Using Commands**
@@ -243,11 +218,13 @@ If you encounter a problem or confusion, head to Stack Overflow and GitHub.
 
 ---
 ## Guidelines from Author
-When working on this project, pay close attention to interface design and user experience. Ensure that your SSH chat application is intuitive and robust, handling user input, authentication, and messaging efficiently.  
-Test your implementation on multiple machines and network setups. If possible, collaborate with peers to simulate real-world usage scenarios. Before connecting, ensure that you know your local network IP address to facilitate testing.  
-If you encounter challenges, revisit the project’s requirements and iterate on your implementation. Start with a [MVP](https://www.techopedia.com/definition/27809/minimum-viable-product-mvp) and refine it as you progress.
 
-Good luck, and enjoy building your SSH-based chat system!
+**Start Small**: Build a minimum viable product ([MVP](https://www.techopedia.com/definition/27809/minimum-viable-product-mvp)) with basic connectivity, then add features.  
+**Test Thoroughly**: Try connecting from multiple machines or terminals to simulate real usage.  
+**Focus on UX**: Ensure commands and messages are intuitive and well-formatted.  
+**Iterate**: Revisit requirements if stuck and refine your code incrementally.
+
+Good luck building SSH-IM! This project will sharpen your skills in secure networking and real-time systems.
 
 ---
 ## Author
