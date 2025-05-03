@@ -133,10 +133,10 @@ Don't worry about it, everything made up for you. Just use ready `Dockerfile` an
 2. Adjust the `Dockerfile` provided to run your application - edit `CMD` command accordingly 
 3. This will allow the project to be started with a single command:
 ```bash
-docker compose up
+docker-compose up
 ```
 
-#### Important Notes
+## Important Notes
 
 - Your API will be available at *localhost:8080*
 - Use these database connection settings in your code:
@@ -145,7 +145,6 @@ docker compose up
     - **User**: latte
     - **Password**: latte
     - **Database**: frappuccino
-
 - The init.sql file will automatically create your tables when the container starts
 
 ### New Endpoints
@@ -180,6 +179,7 @@ As part of the task, the following endpoints must be rewritten to work using SQL
     - `GET /reports/popular-items`: Get a list of popular menu items.
 
 In addition to rewriting the existing endpoints, you must also develop the following new ones:
+
 #### 1. Number of ordered items
 `GET /orders/numberOfOrderedItems?startDate={startDate}&endDate={endDate}`: Returns a list of ordered items and their quantities for a specified time period. If the `startDate` and `endDate` parameters are not provided, the endpoint should return data for the entire time span.
 ##### **Parameters**:
@@ -188,7 +188,7 @@ In addition to rewriting the existing endpoints, you must also develop the follo
 
 Response example:
 ```json
-GET /numberOfOrderedItems?startDate=10.11.2024&endDate=11.11.2024
+GET /orders/numberOfOrderedItems?startDate=10.11.2024&endDate=11.11.2024
 HTTP/1.1 200 OK
 Content-Type: application/json
 
@@ -250,22 +250,22 @@ Content-Type: application/json
 ```
 
 #### 3. Ordered items by period
-`GET /reports/orderedItemsByPeriod?period={day|month}&month={month}`: Returns the number of orders for the specified period, grouped by day within a month or by month within a year. The `period` parameter can take the value `day` or `month`. The `month` parameter is optional and used only when `period=day`.
+`GET /reports/orderedItemsByPeriod?period={daily|monthly}&month={month}`: Returns the number of orders for the specified period, grouped by day within a month or by month within a year. The `period` parameter can take the value `daily` or `monthly`. The `month` parameter is optional and used only when `period=daily`.
 ##### **Parameters**:
 - `period` _(required)_:
-    - `day`: Groups data by day within the specified month.
-    - `month`: Groups data by month within the specified year.
-- `month` _(optional)_: Specifies the month (e.g., `october`). Used only if `period=day`.
-- `year` _(optional)_: Specifies the year. Used only if `period=month`.
+    - `daily`: Groups data by day within the specified month.
+    - `monthly`: Groups data by month within the specified year.
+- `month` _(optional)_: Specifies the month (e.g., `october`). Used only if `period=daily`.
+- `year` _(optional)_: Specifies the year. Used only if `period=monthly`.
 
 Response example:
 ```json
-GET /orderedItemsByPeriod?period=day&month=october
+GET /reports/orderedItemsByPeriod?period=daily&month=october
 HTTP/1.1 200 OK
 Content-Type: application/json
 
 {
-    "period": "day",
+    "period": "daily",
     "month": "october",
     "orderedItems": [
         { "1": 109 },
@@ -306,12 +306,12 @@ Content-Type: application/json
 
 Response example:
 ```json
-GET /orderedItemsByPeriod?period=month&year=2023
+GET /reports/orderedItemsByPeriod?period=monthly&year=2023
 HTTP/1.1 200 OK
 Content-Type: application/json
 
 {
-    "period": "month",
+    "period": "monthly",
     "year": "2023",
     "orderedItems": [
         { "january": 6528 },
@@ -347,7 +347,7 @@ Content-Type: application/json
 
 Response example:
 ```json
-GET /getLeftOvers?sortBy=quantity?page=1&pageSize=4
+GET /inventory/getLeftOvers?sortBy=quantity?page=1&pageSize=4
 HTTP/1.1 200 OK
 Content-Type: application/json
 
@@ -449,7 +449,7 @@ Response example:
 }
 ```
 
-### Initial Setup
+## Initial Setup
 
 You need to create an `init.sql` file that will set up the complete database structure. This file must include:
 
