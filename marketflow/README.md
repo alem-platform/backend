@@ -107,6 +107,7 @@ Run the `provided programs` and receive information on ports `40101`, `40102`, `
 ##### How to run the provided programs?
 
 1. Define the CPU architecture.
+
 2. Then load the images:
 
 - `docker load -i exchange1_amd64.tar` or `docker load -i exchange1_arm64.tar`
