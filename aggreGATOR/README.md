@@ -398,7 +398,7 @@ Here are a few RSS feeds to get you started:
 
 For your own development:
 
-- You can add multiple users and everyone can subscribe to certain news.
+- You can add multiple users and everyone can subscribe to certain news and also add REST API.
 
 - Receive multiple RSS feeds with the `gator add ...` command and process them using the worker pool.
 
