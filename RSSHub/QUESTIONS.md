@@ -1,3 +1,5 @@
+# RSS Aggregator Project – Peer Review Checklist
+
 ## Project Architecture & Clean Code
 
 ### The project follows Clean Architecture principles (domain, app, adapters, cli separation)
@@ -10,148 +12,219 @@
 - [ ] Yes
 - [ ] No
 
-### There are no unexpected panics during execution
+### The directory structure matches the documented layout (cmd, domain, internal, adapters, handlers, cli)
 
 - [ ] Yes
 - [ ] No
 
-## RSS Feed Parsing & Aggregation
-
-### RSS feeds are parsed correctly and required fields are extracted
+### All structs and functions follow Go naming conventions (PascalCase, camelCase)
 
 - [ ] Yes
 - [ ] No
 
-### Articles are deduplicated and only new content is inserted
+### The code is formatted using `gofumpt`
 
 - [ ] Yes
 - [ ] No
 
-### Feed scraping runs at correct intervals
-
-- [ ] Yes
-- [ ] No
-
-### Can explain how the app avoids DoS by managing request frequency
-
-- [ ] Yes
-- [ ] No
-
-## PostgreSQL Integration
-
-### Feeds and articles are stored correctly in PostgreSQL
-
-- [ ] Yes
-- [ ] No
-
-### Migrations are implemented and work as expected
-
-- [ ] Yes
-- [ ] No
-
-### Can explain what migrations are and how they are applied/rolled back
-
-- [ ] Yes
-- [ ] No
-
-## Redis Caching
-
-### Recently fetched articles are cached in Redis per feed
-
-- [ ] Yes
-- [ ] No
-
-### Redis keys use the correct format (`articles:<feed_name>`)
-
-- [ ] Yes
-- [ ] No
-
-### Cache expires after 10 minutes as expected
-
-- [ ] Yes
-- [ ] No
-
-### If Redis is unavailable, fallback to PostgreSQL is triggered
-
-- [ ] Yes
-- [ ] No
-
-## Elasticsearch Logging
-
-### Structured logs are generated and sent to Elasticsearch
-
-- [ ] Yes
-- [ ] No
-
-### Logs contain required fields (timestamp, event, level, feed, etc.)
-
-- [ ] Yes
-- [ ] No
-
-## Kibana Dashboard
-
-### Kibana is accessible on port 5601 via Docker Compose
-
-- [ ] Yes
-- [ ] No
-
-### Logs are visible and searchable in the `rsshub-logs` index
-
-- [ ] Yes
-- [ ] No
-
-### Histogram dashboard (timestamp vs. log count) is present
-
-- [ ] Yes
-- [ ] No
+---
 
 ## CLI Functionality
 
-### `rsshub add` command adds a feed 
+### The CLI supports adding a feed using the `add` command
 
 - [ ] Yes
 - [ ] No
 
-### `rsshub fetch` command starts fetching
+### The CLI supports listing feeds using the `list` command
 
 - [ ] Yes
 - [ ] No
 
-
-### `rsshub list` shows all added feeds
-
-- [ ] Yes
-- [ ] No
-
-### `rsshub delete` removes a feed correctly
+### The CLI supports deleting feeds using the `delete` command
 
 - [ ] Yes
 - [ ] No
 
-### `rsshub articles` fetches recent articles from cache or DB
+### The CLI supports fetching feeds at intervals using `fetch --interval`
 
 - [ ] Yes
 - [ ] No
 
-### `--help` provides clear descriptions of available commands
+### The `articles` command returns the latest N articles from Redis or DB
 
 - [ ] Yes
 - [ ] No
 
-## Docker Compose Setup
-
-### `docker-compose up` correctly starts all services
+### A helpful message is shown using `--help`
 
 - [ ] Yes
 - [ ] No
 
-### Services communicate as expected (Postgres, Redis, ES, Kibana)
+---
+
+## Error Handling & Stability
+
+### The program does not panic during normal use (e.g. nil dereference, index out of range)
+
+- [ ] Yes
+- [ ] No
+
+### All errors return clear messages to the user
+
+- [ ] Yes
+- [ ] No
+
+### The program exits with non-zero status on CLI errors (invalid args, etc.)
+
+- [ ] Yes
+- [ ] No
+
+---
+
+## HTTP Endpoints
+
+### The CLI exposes `GET /feeds/outdated?n=10`
+
+- [ ] Yes
+- [ ] No
+
+### The CLI accepts `POST /feeds/update` with parsed articles
+
+- [ ] Yes
+- [ ] No
+
+### The endpoints are tested or verified manually
+
+- [ ] Yes
+- [ ] No
+
+---
+
+## Background RSS Listener
+
+### The RSSListener service polls RSS feeds at intervals
+
+- [ ] Yes
+- [ ] No
+
+### The RSSListener does **not** access Redis or PostgreSQL directly
+
+- [ ] Yes
+- [ ] No
+
+### The RSSListener sends feed data via HTTP to the CLI service
+
+- [ ] Yes
+- [ ] No
+
+### The interval for polling can be configured via CLI argument
+
+- [ ] Yes
+- [ ] No
+
+---
+
+## Worker Pool
+
+### The background service implements a worker pool using goroutines
+
+- [ ] Yes
+- [ ] No
+
+### The number of workers is configurable
+
+- [ ] Yes
+- [ ] No
+
+### Workers use a channel to queue feeds
+
+- [ ] Yes
+- [ ] No
+
+### Workers use `sync.WaitGroup` to wait for all tasks to complete
+
+- [ ] Yes
+- [ ] No
+
+---
+
+## Redis Caching
+
+### Articles are cached in Redis under `articles:<feed_name>`
+
+- [ ] Yes
+- [ ] No
+
+### Redis entries have a TTL of 10 minutes
+
+- [ ] Yes
+- [ ] No
+
+### If Redis is unavailable, data is fetched from PostgreSQL with a warning
+
+- [ ] Yes
+- [ ] No
+
+---
+
+## PostgreSQL & Migrations
+
+### Feed and article data is persisted in PostgreSQL
+
+- [ ] Yes
+- [ ] No
+
+### The `feeds` table contains fields: id, name, url, description, created_at, updated_at
+
+- [ ] Yes
+- [ ] No
+
+### The `articles` table contains fields: id, title, url, feed_id, description, published_at, etc.
+
+- [ ] Yes
+- [ ] No
+
+### Database migrations are used to manage schema changes
+
+- [ ] Yes
+- [ ] No
+
+### Migrations follow the up/down format and are tested
+
+- [ ] Yes
+- [ ] No
+
+---
+
+## Docker & Environment
+
+### Docker Compose is used to run PostgreSQL, Redis, and RSSListener
+
+- [ ] Yes
+- [ ] No
+
+### The application reads configuration from environment variables or config files
+
+- [ ] Yes
+- [ ] No
+
+---
+
+## Final Sanity Checks
+
+### The project builds with `go build -o rsshub .` without error
+
+- [ ] Yes
+- [ ] No
+
+### The app prints the message "Collecting feeds every Xm..." on start
 
 - [ ] Yes
 - [ ] No
 
 ## Detailed Feedback
 
-### What was great? What impressed you the most about the application or presentation?
+### What was great? What you liked the most about the program and the team performance?
 
-### What could be improved? How can the project be enhanced in future iterations?
+### What could be better? How those improvements could positively impact the outcome?
