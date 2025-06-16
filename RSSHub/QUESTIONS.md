@@ -95,7 +95,7 @@
 - [ ] Yes
 - [ ] No
 
-### Logs are visible and searchable in the `gator-logs` index
+### Logs are visible and searchable in the `rsshub-logs` index
 
 - [ ] Yes
 - [ ] No
@@ -107,22 +107,28 @@
 
 ## CLI Functionality
 
-### `gator add` command adds a feed and starts fetching
+### `rsshub add` command adds a feed 
 
 - [ ] Yes
 - [ ] No
 
-### `gator list` shows all added feeds
+### `rsshub fetch` command starts fetching
 
 - [ ] Yes
 - [ ] No
 
-### `gator delete` removes a feed correctly
+
+### `rsshub list` shows all added feeds
 
 - [ ] Yes
 - [ ] No
 
-### `gator articles` fetches recent articles from cache or DB
+### `rsshub delete` removes a feed correctly
+
+- [ ] Yes
+- [ ] No
+
+### `rsshub articles` fetches recent articles from cache or DB
 
 - [ ] Yes
 - [ ] No

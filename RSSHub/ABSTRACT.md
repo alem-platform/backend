@@ -1,4 +1,4 @@
-# aggreGATOR 🐊 [gator]
+# RSSHub
 
 ## Learning Objectives
 

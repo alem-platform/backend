@@ -1,4 +1,4 @@
-# aggreGATOR 🐊 [gator]
+# RSSHub
 
 ## Learning Objectives
 
@@ -37,7 +37,7 @@ You are developing a CLI application that periodically downloads articles from R
 - The project MUST be compiled by the following command in the project's root directory:
 
 ```sh
-$ go build -o gator .
+$ go build -o rsshub .
 ```
 
 - If an error occurs during startup (e.g., invalid command-line arguments), the program must exit with a non-zero status code and display a clear, understandable error message.
@@ -56,31 +56,37 @@ Include a docker-compose.yml that runs:
 #### Important Notes
 
 ```sh
-gator add --name "alem-platform" --url "https://platform.alem.school/news" --interval 2m
+rsshub add --name "tech-crunch" --url "https://techcrunch.com/feed/"
 ```
 
 Adds a new RSS feed to PostgreSQL. Then reads/writes/updates feeds immediately in database.
 
 ```sh
-gator list
+rsshub fetch --interval 2m
+```
+
+Runs a selection of feeds from the database, and then listens to RSS feeds and updates them every 2 minutes.
+
+```sh
+rsshub list
 ```
 
 Shows a list of all the added feeds.
 
 ```sh
-gator delete --name "alem-platform"
+rsshub delete --name "tech-crunch"
 ```
 
 Deletes the RSS feed from PostgreSQL.
 
 ```sh
-gator articles --num 5
+rsshub articles --num 5
 ```
 
 Shows the latest N articles from Redis or the database. By default -- 3 articles.
 
 ```sh
-gator --help
+rsshub --help
 ```
 
 Shows the help for commands.
@@ -114,7 +120,7 @@ Follow the principles of Clean Architecture (also known as Hexagonal or Layered 
 
 #### RSS
 
-The whole point of the gator program is to fetch the RSS feed of a website and store its content in a structured format in our database. That way we can display it nicely in our CLI.
+The whole point of the rsshub program is to fetch the RSS feed of a website and store its content in a structured format in our database. That way we can display it nicely in our CLI.
 
 RSS stands for "Really Simple Syndication" and is a way to get the latest content from a website in a structured format. It's fairly ubiquitous on the web: most content sites have an RSS feed.
 
@@ -167,7 +173,7 @@ If there are any extra fields in the XML, the parser will just discard them, and
 
 #### Aggregate
 
-Feeds are essentially just lists of posts. A post represents a single web page. The entire point of the gator program is to fetch the actual posts from the feed URLs and store them in database. That way we can display them nicely in CLI.
+Feeds are essentially just lists of posts. A post represents a single web page. The entire point of the rsshub program is to fetch the actual posts from the feed URLs and store them in database. That way we can display them nicely in CLI.
 
 Need to create a mechanism that will regularly receive articles from the database, compare them with incoming articles from the RSS feed and record changes in the database. The priority is the one that has not been updated the longest or has never been updated.
 
@@ -176,8 +182,15 @@ The mechanism should run against the background at the interval specified by the
 A message should appear at startup.
 
 ```sh
-./gator add --name "alem-platform" --url "https://platform.alem.school/news" --interval 2m
+./rsshub fetch --interval 2m
 $ Collecting feeds every 2m...
+```
+
+By default interval should be 3 muntes.
+
+```sh
+./rsshub fetch
+$ Collecting feeds every 3m...
 ```
 
 A small hint for run mechanism against the background is use infinity `for` loop with time.Ticker
@@ -288,13 +301,13 @@ migrate create -ext sql -dir migrations -seq create_feeds_table
 Application of migrations
 
 ```sh
-migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/gator?sslmode=disable" up
+migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/rsshub?sslmode=disable" up
 ```
 
 Rollback migration
 
 ```sh
-migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/gator?sslmode=disable" down
+migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/rsshub?sslmode=disable" down
 ```
 
 #### Redis
@@ -329,7 +342,7 @@ Example:
 
 - Deployed via Docker Compose
 - Port: `5601`
-- Indexes: `gator-logs`
+- Indexes: `rsshub-logs`
 
 Dashboard includes:
 
@@ -345,7 +358,7 @@ postgres:
   port: 5432
   user: postgres
   password: changem
-  dbname: gator
+  dbname: rsshub
 
 redis:
   host: localhost
@@ -353,7 +366,7 @@ redis:
 
 elasticsearch:
   host: http://localhost:9200
-  index: gator-logs
+  index: rsshub-logs
 ```
 
 #### Docker Compose
@@ -368,21 +381,23 @@ Launches:
 ## Example Usage
 
 ```sh
-$ ./gator --help
+$ ./rsshub --help
 
   Usage:
-    gator COMMAND [OPTIONS]
+    rsshub COMMAND [OPTIONS]
 
   Common Commands:
-       add            Adds a new RSS feed to PostgreSQL. Then reads/writes/updates feeds immediately in database.
+       add            Adds a new RSS feed to PostgreSQL.
+       fetch          Runs a selection of feeds from the database, and then listens to RSS feeds and updates them.
        list           Shows a list of all the added feeds
        delete         Deletes the RSS feed from PostgreSQL
        articles       Shows the latest N articles from Redis or the database. By default -- 3 articles.
 ```
 
-## Suggestions
+## Guidelines from Author
 
 - Start with a single feed and CLI command
+- Implement an aggregate mechanism that listens to RSS feeds
 - Add Redis caching
 - Implement PostgreSQL saving and create migrations
 - Set up Elasticsearch logging
@@ -400,6 +415,22 @@ For your own development:
 
 - You can add multiple users and everyone can subscribe to certain news and also add REST API.
 
-- Receive multiple RSS feeds with the `gator add ...` command and process them using the worker pool.
+- You can take the RSS feed reading and parsing mechanism to a separate service and add it to `docker compose` services and communicate with it using different protocols (HTTP/GRPC)
 
-- You can take the RSS feed reading and parsing mechanism to a separate service and add it to `docker compose` services and communicate with it using different protocols (HTTP, GRPC, and)
+## Support
+
+It is always unclear where to start, try to break the task into smaller ones that will solve one problem, and then connect and expand them and eventually you will get the result.
+
+Good luck & have fun :3
+
+## Author
+
+This project has been created by:
+
+_@trech_
+
+Contacts:
+
+- [Email](mailto:amir.inkarov.01@gmail.com)
+- [GitHub](https://github.com/Tr8ch/)
+- [LinkedIn](https://www.linkedin.com/in/trech/)
