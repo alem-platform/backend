@@ -1,172 +1,110 @@
 # RSSHub
 
-## Learning Objectives
+## Аннотация
 
-- Working with XML and RSS formats
-- Concurrency and channels
-- Redis
-- PostgreSQL
-- Docker Compose
-- Microservices
+В рамках этого проекта вы создадите **CLI-приложение — агрегатор [RSS](https://ru.wikipedia.org/wiki/RSS)-лент**, которое:
 
-## Abstract
+- Имеет командный интерфейс (CLI)
+- Обрабатывает и парсит [RSS](https://ru.wikipedia.org/wiki/RSS)-ленты
+- Храненит статьи в PostgreSQL
+- Кэширует свежие данные в Redis
+- Агрегирует RSS-ленты с использованием пула воркеров в фоновом режиме
 
-As part of this project, you will create a **CLI application—an [RSS](https://en.wikipedia.org/wiki/RSS) feed aggregator** that:
+Это сервис, который собирает публикации из различных источников, предоставляющих RSS-ленты (новостные сайты, блоги, форумы). Он помогает пользователям быть в курсе событий в одном месте, без необходимости посещать каждый ресурс вручную.
 
-- Fetches and processes [RSS](https://en.wikipedia.org/wiki/RSS) feeds.
-- Stores newly fetched articles in PostgreSQL.
-- Caches recent feed results in Redis.
-
-This is a service that collects posts from various sources that provide RSS feeds (news websites, blogs, forums). It helps users stay updated in one place without needing to visit each resource manually.
-
-Such a tool is useful for journalists, researchers, analysts, and anyone who wants to stay informed on topics of interest without unnecessary clutter. This kind of application makes information more accessible and centralized.
-
-### Background Processing Microservice
-
-In addition to the CLI, the project includes a **dedicated background microservice written in Go** that continuously processes RSS feeds. This microservice runs in the background and is responsible for periodically fetching, parsing, and preparing feed data.
-
-Following microservice architecture best practices, this background worker does **not have direct access** to PostgreSQL or Redis. Instead, it communicates with the main CLI application over **HTTP**—sending feed entries and status updates to predefined endpoints exposed by the CLI service (which acts as the API gateway and persistence layer).
+Такой инструмент полезен для журналистов, исследователей, аналитиков и всех, кто хочет быть в курсе интересующих тем без лишнего шума. Подобное приложение делает информацию более доступной и централизованной.
 
 ## Context
 
-You are developing a CLI application that periodically downloads articles from RSS feeds added by the user and saves them to PostgreSQL. Repeated requests are served from Redis. You will also write a service that will be responsible for processing RSS feeds in the background and connecting to the main service. All services are deployed using Docker Compose.
+You are developing a CLI application that periodically fetches articles from user-added RSS feeds and stores them in `PostgreSQL`. Repeated requests are served from `Redis`. You will also implement a mechanism responsible for background, parallel processing of RSS feeds. All services are deployed using `Docker Compose`.
 
 ## General Criteria
 
-- Your code MUST be written in accordance with [gofumpt](https://github.com/mvdan/gofumpt). If not, you will be graded `0` automatically.
-- Your program MUST be able to compile successfully.
-- Your program MUST not exit unexpectedly (any panics: `nil-pointer dereference`, `index out of range` etc.). If so, you will get `0` during the defence.
-- External packages are allowed only for working with Redis/PostgreSQL. If you use any other external packages, you will receive a grade of `0`.
-- The project MUST be compiled by the following command in the project's root directory:
+- Your code **MUST** be formatted according to [gofumpt](https://github.com/mvdan/gofumpt). If not, you will automatically receive a grade of `0`.
+- Your program **MUST** compile successfully without errors.
+
+- Your program **MUST NOT** exit unexpectedly (e.g., due to nil pointer dereference, index out of range, etc.). If it does, you will receive a grade of `0` during the defense.
+
+- External packages are allowed only for working with `Redis` and `PostgreSQL`. Using any other external dependencies will result in a grade of `0`.
+
+- If an error occurs during startup (e.g., invalid command-line arguments), the program **MUST**:
+
+  - Exit with a non-zero status code
+  - Display a clear and understandable error message
+
+- The project **MUST** compile successfully using the following command from the project's root directory:
 
 ```sh
 $ go build -o rsshub .
 ```
 
-- If an error occurs during startup (e.g., invalid command-line arguments), the program must exit with a non-zero status code and display a clear, understandable error message.
+- The project **MUST NOT** produce any errors when run with the -race flag:
+
+```sh
+$ go run -race main.go
+```
+
+- The interval **MUST** be set dynamically via a terminal command. If not, you will automatically receive a grade of `0`.
+
+- The number of workers **MUST** also be configurable dynamically via a terminal command. If not, you will automatically receive a grade of `0`.
 
 ## Mandatory Part
 
-#### Infrastructure
+### Infrastructure
 
-Include a docker-compose.yml that runs:
+Include a `docker-compose.yml` file that runs the following services:
 
+- RSSHub – a CLI application
 - PostgreSQL – for storing articles
 - Redis – for caching feeds
-- RSSListener - for processing feeds
 
-#### Important Notes
+### Architecture
 
-```sh
-rsshub add --name "tech-crunch" --url "https://techcrunch.com/feed/"
-```
-
-Adds a new RSS feed to PostgreSQL.
-
-```sh
-rsshub fetch --interval 2m
-```
-
-Sets the interval at which RSS feeds are fetched (e.g. every 2 minutes).
-
-```sh
-rsshub list
-```
-
-Shows a list of all the added feeds.
-
-```sh
-rsshub delete --name "tech-crunch"
-```
-
-Deletes the RSS feed from PostgreSQL.
-
-```sh
-rsshub articles --num 5
-```
-
-Shows the latest N articles from Redis or the database. By default -- 3 articles.
-
-```sh
-rsshub --help
-```
-
-Shows the help for commands.
-
-#### Architecture
-
-The project is designed with Clean Architecture principles (also known as Hexagonal or Layered Architecture), ensuring separation of concerns, testability, and maintainability. The system is split into two main components:
-
-### 1. CLI Service (Core Application)
-
-This is the primary Go service that:
+The project is designed using the principles of Clean Architecture (also known as Hexagonal or Layered Architecture), which ensures separation of concerns, testability, and maintainability:
 
 - Provides a **command-line interface** for user interaction.
-- Exposes **HTTP endpoints** for receiving parsed RSS articles.
-- Handles **persistence (PostgreSQL)** and **caching (Redis)** internally.
-- Orchestrates business logic through the application layer.
+- Handles **data persistence (PostgreSQL)** and **caching (Redis)** internally.
+- Executes business logic through the application layer.
 
-Directory structure:
+### Directory Structure
 
-- `cmd/app/` - Initialize all dependencies
+- `cmd/app/` — Initialization of all dependencies
 
   - Starts the application
+  - Launches background, parallel processing of RSS feeds
 
 - `domain/` — Domain models and interfaces (pure business logic):
 
-  - `Feed`, `Article` structs
-  - Repository interfaces (`FeedRepository`, `ArticleRepository`, `Cache`, etc.)
+  - Structures: `Feed`, `Article`
+  - Repository interfaces: `FeedRepository`, `ArticleRepository`, `Cache`, etc.
 
 - `internal/` — Application services (use cases, orchestration logic):
 
-  - Adding feeds, fetching/deduplication logic
-  - Coordination of storage and caching
-  - Stateless, depends only on domain interfaces
+  - Adding feeds, loading logic, and deduplication
+  - Coordination between storage and cache
+  - Stateless; depends only on domain interfaces
+  - Mechanism for processing RSS feeds and saving articles
 
-- `adapters/` — External system implementations:
+- `adapters/` — Implementations of external systems:
 
   - `postgres/` — PostgreSQL storage layer
   - `redis/` — Redis cache
+  - `rss/` — Interaction with external services related to RSS feeds
 
-- `handlers/` — HTTP handlers for receiving external input (e.g., from RSSListener)
+- `cli/` — Command-line interface:
 
-- `cli/` — Command Line Interface:
-  - User commands (`add-feed`, `fetch`, `list`, etc.)
-  - Communicates with app layer
-  - Can launch an internal HTTP server for receiving feed data from RSSListener
+  - User commands (`add`, `delete`, `list`, etc.)
+  - Interacts with the application layer
 
-### 2. RSSListener (Background Microservice)
+### RSS
 
-This is a **separate microservice written in Go**, responsible for:
+The main goal of the `rsshub` program is to fetch a website's `RSS` feed and store its content in a structured format in our database. This allows us to display the data nicely in the CLI.
 
-- Continuously polling subscribed RSS feeds.
-- Parsing and preparing article data.
-- Sending results to the main CLI service **via HTTP POST requests**.
+`RSS` stands for **"Really Simple Syndication"** — it's a way to receive fresh content from a website in a structured format. It is widely used on the internet: most content-driven websites provide an `RSS` feed.
 
-RSSListener does **not directly access** PostgreSQL or Redis, following **microservice best practices**:
+### Structure of an RSS Feed
 
-- Each service owns its data and exposes interaction **only via well-defined APIs**.
-- The CLI service acts as the **gateway** for all data ingestion and persistence.
-- This improves **security, scalability, and encapsulation**.
-
-### Microservices in Go
-
-Go is well-suited for microservice architecture due to:
-
-- Its simplicity, fast compile times, and low runtime overhead.
-- Powerful standard libraries for HTTP, concurrency, and networking.
-- Strong typing and modular code structure that supports clean separation of services.
-
-This architecture ensures that both services can be developed, tested, and deployed independently, with clear communication over HTTP and decoupled responsibilities.
-
-#### RSSListener
-
-The main purpose of the `rsshub` program is to fetch the RSS feed of a website and store its content in a structured format in our database. That way we can display it nicely in our CLI.
-
-RSS stands for "Really Simple Syndication" and is a way to get the latest content from a website in a structured format. It's fairly ubiquitous on the web: most content sites have an RSS feed.
-
-Structure of an RSS Feed
-RSS is a specific structure of XML. We will keep it simple and only worry about a few fields. Here's an example of the documents which need to parse:
+`RSS` is a specific `XML` structure. We will simplify the task and focus only on a few fields. Below is an example of the documents that need to be parsed:
 
 ```xml
 <rss xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
@@ -190,7 +128,7 @@ RSS is a specific structure of XML. We will keep it simple and only worry about 
 </rss>
 ```
 
-Then directly unmarshal this kind of document into structs like this:
+_Then directly transform this kind of document into structures like this:_
 
 ```go
 type RSSFeed struct {
@@ -210,63 +148,65 @@ type RSSItem struct {
 }
 ```
 
-If there are any extra fields in the XML, the parser will just discard them, and if any are missing, the parser will leave them as their zero value.
+If there are additional fields in the `XML`, the parser will simply ignore them. If some fields are missing, they will retain their default (zero) values.
 
-#### Periodic Feed Aggregation
+Accordingly, you will need to implement an `RSS` parser that performs an HTTP request using the feed URL stored in the database.
 
-Feeds are essentially just lists of posts. A post represents a single web page. The entire point of the `rsshub` program is to fetch the actual posts from the feed URLs and store them in database. That way we can display them nicely in CLI.
+### Periodic Feed Aggregation
 
-Need to create a mechanism that will regularly receive articles from the database, compare them with incoming articles from the RSS feed and record changes in the database. The priority is the one that has not been updated the longest or has never been updated.
+Feeds are essentially lists of publications. Each publication is a separate web page. The main goal of the `rsshub` program is to fetch actual publications using the URLs from RSS feeds and store them in the database. This allows us to display them nicely in the CLI.
 
-The mechanism should run against the background at the interval specified by the command line argument (for example: 1m, 1h).
+You need to create a mechanism that regularly retrieves feed URLs from the database, compares them with new articles from the `RSS` feeds, and saves any changes to the database. Priority should be given to feeds that have not been updated for a long time or have never been updated.
 
-A message should appear at startup.
+This mechanism must run in the background at a specified interval. The default interval should be `3 minutes`. This interval should also be configurable using a CLI command. The command must be able to change the interval while the application is running, without stopping the background aggregation process.
 
-```sh
-./rsshub fetch --interval 2m
-$ Collecting feeds every 2m...
-```
+**To improve performance, implement a worker pool for parallel processing of multiple articles:**
 
-By default interval should be 3 minutes.
+1. On each timer tick, retrieve the N most outdated or never-updated feeds from the database.
+2. Distribute them across the worker pool (goroutines).
+3. Each worker:
 
-```sh
-./rsshub fetch
-$ Collecting feeds every 3m...
-```
+   - Downloads the feed by its URL
+   - Parses new articles
+   - Saves them to `Postgres` and caches `Redis`
 
-A small hint for running the mechanism in the background is to use an infinite `for` loop. with time.Ticker
+4. The application must be able to dynamically:
 
-```go
-ticker := time.NewTicker(interval)
-defer ticker.Stop()
+   - Change the ticker interval (`SetInterval`)
+   - Resize the number of workers (`Resize`)
 
-for range ticker.C {
-	scrapeFeeds(s)
-}
-```
+**Default behavior:**
 
-#### Worker Pool for Concurrent Processing
+- Default settings must be defined in the application configuration
+- Default interval: `3 minutes`
+- Default number of workers: `3`
 
-To improve performance, implement a worker pool for concurrently processing multiple RSS feeds:
+**Mechanism requirements:**
 
-- On each tick, retrieve N most outdated or never-updated feeds from the database.
-- Distribute them across a pool of worker goroutines.
-- The number of workers is configurable; the default is 3.
+- **The ticker** must be controllable: it should be possible to stop and restart it with a new interval
+- **The worker** pool must be scalable: workers can be stopped or added dynamically
 
-#### Worker Pool Requirements
+**What to Avoid**
 
-- Use a buffered channel to queue feed processing tasks.
-- Use sync.WaitGroup to wait until all feeds are processed before proceeding to the next tick.
+| Problem                      | How to Avoid                                                                                            |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------- |
+| ❌ Data Race                 | Use `sync.Mutex` or `atomic` when accessing shared variables (e.g., `n`, `interval`)                    |
+| ❌ Goroutine Leaks           | All spawned goroutines (ticker, workers) must be terminated using `context.Context` or a `done` channel |
+| ❌ Duplicate Tickers         | When calling `SetInterval()`, always stop the old ticker before starting a new one                      |
+| ❌ Closing Channel Twice     | Channels (e.g., `jobs`) must be closed by only one goroutine                                            |
+| ❌ Panic on `ticker.Reset()` | Never call `Reset()` on a stopped ticker                                                                |
+| ❌ Unconsumed `jobs` Channel | Workers must read from the `jobs` channel; otherwise, writing to the channel will cause a deadlock      |
 
-#### Required Endpoints in the Service
+**What Needs to Be Implemented**
 
-To support the mechanism, ensure the service exposes the following endpoints:
-
-1. `GET /feeds/outdated?n=10`
-   Returns the n most outdated or never-updated feeds.
-
-2. `POST /feeds/update`
-   Accepts updated feed data and saves it to the database.
+- Structures for the ticker and worker pool
+- Method `Start(ctx)` — starts the processing loop
+- Method `SetInterval(time.Duration)` — safely updates the interval
+- Method `Resize(n int)` — recreates the worker pool with the desired size
+- Method `Stop()` — gracefully shuts down everything via `ctx`
+- Workers — read from the `jobs` channel and process articles
+- The `jobs` channel must be created and closed correctly
+- The code should be structured as a service (in `internal/`)
 
 > ---
 >
@@ -281,6 +221,50 @@ To support the mechanism, ensure the service exposes the following endpoints:
 >
 > # WARNING
 
+## Important CLI Commands
+
+```sh
+rsshub add --name "tech-crunch" --url "https://techcrunch.com/feed/"
+```
+
+Adds a new RSS feed to PostgreSQL.
+
+```sh
+rsshub set-interval 2m
+```
+
+Sets the interval at which RSS feeds are fetched (e.g., every 2 minutes).
+
+```sh
+rsshub set-workers 3
+```
+
+Sets the number of workers.
+
+```sh
+rsshub list --num 10
+```
+
+Displays a N feeds. If without option then the cammand show list of all feeds added.
+
+```sh
+rsshub delete --name "tech-crunch"
+```
+
+Deletes the RSS feed from PostgreSQL.
+
+```sh
+rsshub articles --feed-name "tech-crunch" --num 5
+```
+
+Shows the latest N articles from Redis or the database by feed name. Default is 3 articles.
+
+```sh
+rsshub --help
+```
+
+Displays help information for all available commands.
+
 #### PostgreSQL
 
 Tables:
@@ -290,32 +274,31 @@ Tables:
         | Field      | Type          |
         | ---------- | ------------- |
         | id         | UUID (PK)     |
-        | name       | TEXT (unique) |
-        | url        | TEXT          |
-        | description| TEXT          |
         | created_at | TIMESTAMP     |
         | updated_at | TIMESTAMP     |
+        | name       | TEXT (unique) |
+        | url        | TEXT          |
 
 2.  `articles`
 
         | Field         | Type          |
         | ------------- | ------------- |
         | id            | UUID (PK)     |
-        | title         | TEXT          |
-        | url           | TEXT          |
-        | description   | TEXT          |
-        | feed_id       | UUID          |
-        | published_at  | TIMESTAMP     |
         | created_at    | TIMESTAMP     |
         | updated_at    | TIMESTAMP     |
+        | title         | TEXT          |
+        | url           | TEXT          |
+        | published_at  | TIMESTAMP     |
+        | description   | TEXT          |
+        | feed_id       | UUID          |
 
 > This is a standard instruction for tables. It's in your best interest to add fields.
 
-Migrations:
+### Migrations
 
-Migrations are a set of versioned files that describe changes to the database structure (DDL): creating tables, changing columns, adding indexes, etc.
+Migrations are a set of versioned files that describe changes to the database schema (DDL): creating tables, modifying columns, adding indexes, etc.
 
-The recommended tool is `golang-migrate/migrate`
+The recommended tool is `golang-migrate/migrate`.
 
 Install:
 
@@ -331,7 +314,7 @@ migrate -version
 
 Example:
 
-```
+```sh
 migrations/
 ├── create_feeds_table.up.sql
 └── create_feeds_table.down.sql
@@ -389,6 +372,8 @@ migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/rss
 cli_app:
   host: localhost
   port: 8080
+  timer_interval: 3m
+  workers_count: 3
 
 postgres:
   host: localhost
@@ -400,17 +385,14 @@ postgres:
 redis:
   host: localhost
   port: 6379
-
-rss_listener:
-  host: localhost
-  port: 8888
-  worker_counts: 3
 ```
 
 ```env
 # CLI App
 CLI_APP_HOST=localhost
 CLI_APP_PORT=8080
+CLI_APP_TIMER_INTERVAL=3m
+CLI_APP_WORKERS_COUNT=3
 
 # PostgreSQL
 POSTGRES_HOST=localhost
@@ -423,19 +405,16 @@ POSTGRES_DBNAME=rsshub
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-# RSS Listener
-RSS_LISTENER_HOST=localhost
-RSS_LISTENER_PORT=8888
-RSS_LISTENER_WORKER_COUNTS=3
 ```
 
 #### Docker Compose
 
 Launches:
 
+- CLI (port: `8080`)
 - PostgreSQL (port: `5432`)
+  - set username, password, db from `env/yaml`
 - Redis (port: `6379`)
-- RSSListener (port: `8888`)
 
 ## Example Usage
 
@@ -446,41 +425,46 @@ $ ./rsshub --help
     rsshub COMMAND [OPTIONS]
 
   Common Commands:
-       add            Adds a new RSS feed to PostgreSQL.
-       fetch          Sets the interval at which RSS feeds are fetched (e.g. every 2 minutes).
-       list           Shows a list of all the added feeds
-       delete         Deletes the RSS feed from PostgreSQL
-       articles       Shows the latest N articles from Redis or the database. By default -- 3 articles.
+       add             Adds a new RSS feed to PostgreSQL.
+       set-interval    Sets the interval at which RSS feeds are fetched (e.g., every 2 minutes).
+       set-workers     Sets the number of workers.
+       list            Shows a list of all the added feeds.
+       delete          Deletes the RSS feed from PostgreSQL.
+       articles        Shows the latest N articles from Redis or the database. By default -- 3 articles.
 ```
 
-## Guidelines from Author
+## Recommendations from the Author
 
 - Start with a single RSS feed and a CLI command to fetch it
-- Implement an aggregate mechanism with a background ticker
-- Add a worker pool to process feeds concurrently
-- Use PostgreSQL for storage and apply database migrations
-- Add Redis for optional caching of recent articles
-- Build a `docker-compose.yml` for local development
-- Finish with basic tests for fetch and parse logic
+- Implement an aggregation mechanism with a background timer
+- Add a worker pool for parallel feed processing
+- Use PostgreSQL for storage and configure database migrations
+- Add Redis for caching the latest articles
+- Create a `docker-compose.yml` file for local development
+- Finish by testing your application logic
 
-Here are a few RSS feeds to try:
+**Here are some RSS feeds to get started:**
 
 - TechCrunch: `https://techcrunch.com/feed/`
 - Hacker News: `https://news.ycombinator.com/rss`
+- UN News: `https://news.un.org/feed/subscribe/ru/news/all/rss.xml`
+- BBC News: `https://feeds.bbci.co.uk/news/world/rss.xml`
+- Ars Technica: `http://feeds.arstechnica.com/arstechnica/index`
+- The Verge: `https://www.theverge.com/rss/index.xml`
 
-## Additionally _(\*not necessarily)_
+## Optional _(Nice to Have)_
 
-For your own development _(Future features)_:
+For your own growth _(Future opportunities)_:
 
-- You can add multiple users and everyone can subscribe to certain news.
-- You can add a Web API for external access.
-- You can add a Telegram Bot for notifications of new articles,
+- Add support for multiple users and allow each to subscribe to different feeds
+- Implement a Web API for external access
+- Add a Telegram bot to notify users about new articles
 
 ## Support
 
-It is always unclear where to start, try to break the task into smaller ones that will solve one problem, and then connect and expand them and eventually you will get the result.
+It's always hard to know where to start. Try breaking the task into smaller pieces, each solving one specific problem. Then connect and extend them — eventually, you'll have a complete solution.
 
-Good luck & have fun :3
+Good luck, and enjoy the process :3
 
 ## Author
 
@@ -490,6 +474,9 @@ _@trech_
 
 Contacts:
 
+---
+
 - [Email](mailto:amir.inkarov.01@gmail.com)
 - [GitHub](https://github.com/Tr8ch/)
+- [Discord](https://discordapp.com/users/394227156915322881/)
 - [LinkedIn](https://www.linkedin.com/in/trech/)

@@ -1,8 +1,6 @@
-# RSS Aggregator Project – Peer Review Checklist
-
 ## Project Architecture & Clean Code
 
-### The project follows Clean Architecture principles (domain, app, adapters, cli separation)
+### The project follows Clean Architecture principles (`domain`, `app`, `adapter`, `internal`, `cli` separation)
 
 - [ ] Yes
 - [ ] No
@@ -12,219 +10,134 @@
 - [ ] Yes
 - [ ] No
 
-### The directory structure matches the documented layout (cmd, domain, internal, adapters, handlers, cli)
+### Business logic is implemented in the internal layer via use cases
 
 - [ ] Yes
 - [ ] No
 
-### All structs and functions follow Go naming conventions (PascalCase, camelCase)
+### Domain layer contains only pure models and interfaces
 
 - [ ] Yes
 - [ ] No
-
-### The code is formatted using `gofumpt`
-
-- [ ] Yes
-- [ ] No
-
----
 
 ## CLI Functionality
 
-### The CLI supports adding a feed using the `add` command
+### CLI provides commands to `add`, `list`, and `delete` RSS feeds
 
 - [ ] Yes
 - [ ] No
 
-### The CLI supports listing feeds using the `list` command
+### CLI provides commands to `articles` show articles
 
 - [ ] Yes
 - [ ] No
 
-### The CLI supports deleting feeds using the `delete` command
+### Have all the CLI command options described in the task been completed
 
 - [ ] Yes
 - [ ] No
 
-### The CLI supports fetching feeds at intervals using `fetch --interval`
+### CLI allows changing the fetch interval at runtime (`set-interval`)
 
 - [ ] Yes
 - [ ] No
 
-### The `articles` command returns the latest N articles from Redis or DB
+### CLI allows resizing the worker pool at runtime (`set-workers`)
 
 - [ ] Yes
 - [ ] No
 
-### A helpful message is shown using `--help`
+### CLI supports listing articles by feed name
 
 - [ ] Yes
 - [ ] No
 
----
+## Background Aggregation Mechanism
 
-## Error Handling & Stability
-
-### The program does not panic during normal use (e.g. nil dereference, index out of range)
+### The application fetches and stores articles from RSS feeds periodically
 
 - [ ] Yes
 - [ ] No
 
-### All errors return clear messages to the user
+### Old or never-updated feeds are prioritized
 
 - [ ] Yes
 - [ ] No
 
-### The program exits with non-zero status on CLI errors (invalid args, etc.)
+### The aggregation interval can be updated during runtime without stopping the service
 
 - [ ] Yes
 - [ ] No
 
----
+## Worker Pool & Concurrency
 
-## HTTP Endpoints
-
-### The CLI exposes `GET /feeds/outdated?n=10`
+### A worker pool is implemented to fetch feeds in parallel
 
 - [ ] Yes
 - [ ] No
 
-### The CLI accepts `POST /feeds/update` with parsed articles
+### The worker pool is resizable at runtime
 
 - [ ] Yes
 - [ ] No
 
-### The endpoints are tested or verified manually
+### Shared state is protected from race conditions (`sync.Mutex` or `atomic`)
 
 - [ ] Yes
 - [ ] No
 
----
-
-## Background RSS Listener
-
-### The RSSListener service polls RSS feeds at intervals
+### Goroutines are properly stopped via `context.Context` or `done` channel
 
 - [ ] Yes
 - [ ] No
 
-### The RSSListener does **not** access Redis or PostgreSQL directly
+## Error Prevention
+
+### Duplicate ticker creation is avoided by stopping the previous ticker
 
 - [ ] Yes
 - [ ] No
 
-### The RSSListener sends feed data via HTTP to the CLI service
+### Channels are closed only once and by one routine
 
 - [ ] Yes
 - [ ] No
 
-### The interval for polling can be configured via CLI argument
+### Ticker is never reset after being stopped
 
 - [ ] Yes
 - [ ] No
 
----
-
-## Worker Pool
-
-### The background service implements a worker pool using goroutines
+### `jobs` channel is always consumed to prevent deadlocks
 
 - [ ] Yes
 - [ ] No
 
-### The number of workers is configurable
+## Storage & Caching
+
+### PostgreSQL is used for storing feeds and articles
 
 - [ ] Yes
 - [ ] No
 
-### Workers use a channel to queue feeds
+### Redis is used for caching recent articles
 
 - [ ] Yes
 - [ ] No
 
-### Workers use `sync.WaitGroup` to wait for all tasks to complete
+### Migrations are implemented using `golang-migrate`
 
 - [ ] Yes
 - [ ] No
 
----
+## Docker & Deployment
 
-## Redis Caching
-
-### Articles are cached in Redis under `articles:<feed_name>`
+### A `docker-compose.yml` file is present and runs the required services
 
 - [ ] Yes
 - [ ] No
 
-### Redis entries have a TTL of 10 minutes
+### All services (RSSHub CLI, PostgreSQL, Redis) run and interact correctly in Docker
 
 - [ ] Yes
 - [ ] No
-
-### If Redis is unavailable, data is fetched from PostgreSQL with a warning
-
-- [ ] Yes
-- [ ] No
-
----
-
-## PostgreSQL & Migrations
-
-### Feed and article data is persisted in PostgreSQL
-
-- [ ] Yes
-- [ ] No
-
-### The `feeds` table contains fields: id, name, url, description, created_at, updated_at
-
-- [ ] Yes
-- [ ] No
-
-### The `articles` table contains fields: id, title, url, feed_id, description, published_at, etc.
-
-- [ ] Yes
-- [ ] No
-
-### Database migrations are used to manage schema changes
-
-- [ ] Yes
-- [ ] No
-
-### Migrations follow the up/down format and are tested
-
-- [ ] Yes
-- [ ] No
-
----
-
-## Docker & Environment
-
-### Docker Compose is used to run PostgreSQL, Redis, and RSSListener
-
-- [ ] Yes
-- [ ] No
-
-### The application reads configuration from environment variables or config files
-
-- [ ] Yes
-- [ ] No
-
----
-
-## Final Sanity Checks
-
-### The project builds with `go build -o rsshub .` without error
-
-- [ ] Yes
-- [ ] No
-
-### The app prints the message "Collecting feeds every Xm..." on start
-
-- [ ] Yes
-- [ ] No
-
-## Detailed Feedback
-
-### What was great? What you liked the most about the program and the team performance?
-
-### What could be better? How those improvements could positively impact the outcome?
