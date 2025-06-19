@@ -1,18 +1,27 @@
 # RSSHub
 
-## Аннотация
+## Learning Objectives
 
-В рамках этого проекта вы создадите **CLI-приложение — агрегатор [RSS](https://ru.wikipedia.org/wiki/RSS)-лент**, которое:
+- Working with XML and RSS formats
+- Concurrency and channels
+- Worker Pool
+- Redis
+- PostgreSQL
+- Docker Compose
 
-- Имеет командный интерфейс (CLI)
-- Обрабатывает и парсит [RSS](https://ru.wikipedia.org/wiki/RSS)-ленты
-- Храненит статьи в PostgreSQL
-- Кэширует свежие данные в Redis
-- Агрегирует RSS-ленты с использованием пула воркеров в фоновом режиме
+## Abstract
 
-Это сервис, который собирает публикации из различных источников, предоставляющих RSS-ленты (новостные сайты, блоги, форумы). Он помогает пользователям быть в курсе событий в одном месте, без необходимости посещать каждый ресурс вручную.
+In this project, you will build a **CLI application — an [RSS](https://en.wikipedia.org/wiki/RSS) feed aggregator**, which:
 
-Такой инструмент полезен для журналистов, исследователей, аналитиков и всех, кто хочет быть в курсе интересующих тем без лишнего шума. Подобное приложение делает информацию более доступной и централизованной.
+- Provides a command-line interface (CLI)
+- Fetches and parses [RSS](https://en.wikipedia.org/wiki/RSS) feeds
+- Stores articles in PostgreSQL
+- Caches recent data in Redis
+- Aggregates RSS feeds using a worker pool in the background
+
+This is a service that collects publications from various sources that provide RSS feeds (news sites, blogs, forums). It helps users stay informed in one place without the need to visit each website manually.
+
+Such a tool is useful for journalists, researchers, analysts, and anyone who wants to stay updated on topics of interest without unnecessary noise. This kind of application makes information more accessible and centralized.
 
 ## Context
 
