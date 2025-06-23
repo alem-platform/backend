@@ -476,6 +476,10 @@ In one terminal:
 # Start the aggregator
 $ ./rsshub fetch
 $ The background process for fetching feeds has started (interval = 3 minutes, workers = 3)
+
+
+# To stop: press Ctrl+C
+$ Graceful shutdown: aggregator stopped
 ```
 
 In another terminal: change settings
@@ -486,8 +490,6 @@ $ Interval of fetching feeds changed from 3 minutes to 2 minutes
 
 $ ./rsshub set-workers --count 4
 $ Number of workers changed from 3 to 5
-
-# To stop: go back to fetch terminal and press Ctrl+C
 ```
 
 ### Database
