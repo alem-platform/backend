@@ -69,41 +69,115 @@ Include a `docker-compose.yml` file that runs the following services:
 
 ### Architecture
 
-The project is designed using the principles of Clean Architecture (also known as Hexagonal or Layered Architecture), which ensures separation of concerns, testability, and maintainability:
+The project is designed using the principles of:
 
-- Provides a **command-line interface** for user interaction.
-- Handles **data persistence (PostgreSQL)** and **caching (Redis)** internally.
-- Executes business logic through the application layer.
+| Practice                       | Justification                                            |
+| ------------------------------ | -------------------------------------------------------- |
+| Clean Architecture (Uncle Bob) | Infrastructure-independent core                          |
+| DDD (Domain-Driven Design)     | Clear delineation of entities, interfaces, and use-cases |
+| Hexagonal architecture         | Input/output ports and adapters                          |
+| `internal/` separation         | `internal/` hides realisation                            |
+| CLI/API decoupling             | CLI does not depend on repositories — only on services   |
+| Environment isolation          | Configuration in config/, initialization in container.go |
 
 ### Directory Structure
 
-- `cmd/app/` — Initialization of all dependencies
+```
+rsshub/
+├── cmd/
+│   └── rsshub/
+│       └── main.go               # Entry point
+│
+├── internal/
+│   ├── app/                      # Application wiring (DI, configurations)
+│   │   └── app.go                # Initialization of services, adapters, env
+│   │
+│   ├── adapter/                  # External dependencies (infrastructure)
+│   │   ├── db/                   # PostgreSQL implementation
+│   │   ├── cache/                # Redis implementation
+│   │   ├── rss/                  # RSS parsers and fetcher
+│   │
+│   ├── domain/                   # Business Logic (DDD style)
+│   │   ├── model/                # Feed, Article
+│   │   ├── service/              # FeedService, Article Service
+│   │   └── interface/            # Infrastructure Interfaces (Input/Output Ports)
+│   │
+│   └── handler/                  # Input Interfaces (cli/http/etc)
+│       └── cli/                  # CLI commands
+│
+├── config/
+│   ├── config.yaml
+│   └── config.go                 # Загрузка конфигурации
+│
+├── migrations/                   # SQL миграции (для golang-migrate)
+│   └── ...
+│
+├── go.mod
+├── go.sum
+└── README.md
+```
 
-  - Starts the application
-  - Launches background, parallel processing of RSS feeds
+🧭 **Layer-by-Layer Description**
 
-- `domain/` — Domain models and interfaces (pure business logic):
+1. `cmd/rsshub/main.go` — Entry point
+   - Responsible for launching the application
+   - Calls `Init()`, `Start()` or similar from `internal/app/app.go`
 
-  - Structures: `Feed`, `Article`
-  - Repository interfaces: `FeedRepository`, `ArticleRepository`, `Cache`, etc.
+- 🔒 Not allowed: business logic, database management
+- ✅ You can: only call a ready-built application
 
-- `internal/` — Application services (use cases, orchestration logic):
+2. `internal/app/` — Wiring Layer
+   - Coordinates and wires together all parts of the application.
+   - Initializes core components:
+     - Loads configuration (from env, files, or flags)
+     - Sets up `PostgreSQL` storage and `Redis` cache
+     - Constructs `domain` services (use cases)
+     - Prepares CLI and/or HTTP handlers
+   - Responsible for application lifecycle:
+     - Start the RSS aggregator (ticker + worker pool) in the background
+     - Handles `graceful shutdown` via context cancellation and signal handling
+   - Acts as the single entry point for assembling and running the system
 
-  - Adding feeds, loading logic, and deduplication
-  - Coordination between storage and cache
-  - Stateless; depends only on domain interfaces
-  - Mechanism for processing RSS feeds and saving articles
+- ✅ May depend on all the inner layers
+- 🔒 You can't bring business logic here
 
-- `adapters/` — Implementations of external systems:
+1. `internal/handler/{cli,http}` — Input Adapter Layer
+   - Accept commands from the user (CLI, HTTP, gRPC)
+   - Convert the input into calls to application services (`domain/service`)
 
-  - `postgres/` — PostgreSQL storage layer
-  - `redis/` — Redis cache
-  - `rss/` — Interaction with external services related to RSS feeds
+- ✅ They only know the interfaces and services
+- 🔒 They don't know about the database, Redis, or external dependencies
 
-- `cli/` — Command-line interface:
+4. `domain/service/` — Use-case layer (Application Layer)
+   - Implements business logic orchestration
+   - It works through interfaces (`interface`) — it doesn't know what's under them.
 
-  - User commands (`add`, `delete`, `list`, etc.)
-  - Interacts with the application layer
+- ✅ Depends only on `domain/port`
+- 🔒 Adapters cannot be imported, no infra
+
+5. `domain/interface/` - Interfaces (Port Layer)
+   - Determine what is needed for the service (for example: `FeedRepository`, `Cache`)
+   - They are used in both `service/` and implemented in `adapter/`
+
+- ✅ Interfaces only, can be used everywhere
+- 🔒 No logic, implementations, or third-party packages
+
+6. `domain/model/` — Entities (Domain Entities)
+   - `Feed`, `Article` — basic structures
+   - They contain possible validations and methods
+
+- ✅ Can be used anywhere
+- 🔒 No dependencies on external packages
+
+7. `adapter/` — Output Adapters (Outbound Adapter Layer)
+   - Implement interfaces from `interface/`
+   - Infrastructural things:
+     - PostgreSQL (`db/`)
+     - Redis (`cache/`)
+     - RSS fetcher (`rss/`)
+
+- ✅ May depend on external libraries
+- 🔒 Cannot be used in either domain/service or handler
 
 ### RSS
 
@@ -179,10 +253,7 @@ This mechanism must run in the background at a specified interval. The default i
    - Parses new articles
    - Saves them to `Postgres` and caches `Redis`
 
-4. The application must be able to dynamically:
-
-   - Change the ticker interval (`SetInterval`)
-   - Resize the number of workers (`Resize`)
+4. The application should be able to change the ticker interval and size of workers without restarting the application.
 
 **Default behavior:**
 
@@ -209,13 +280,22 @@ This mechanism must run in the background at a specified interval. The default i
 **What Needs to Be Implemented**
 
 - Structures for the ticker and worker pool
-- Method `Start(ctx)` — starts the processing loop
-- Method `SetInterval(time.Duration)` — safely updates the interval
-- Method `Resize(n int)` — recreates the worker pool with the desired size
-- Method `Stop()` — gracefully shuts down everything via `ctx`
 - Workers — read from the `jobs` channel and process articles
 - The `jobs` channel must be created and closed correctly
+- Using context cancellation to implement `graceful shutdown`
 - The code should be structured as a service (in `internal/`)
+- The interface is below:
+
+```go
+type YourAggregator interface {
+    Start(ctx context.Context) error           // Starts background feed polling
+    Stop() error                               // Graceful shutdown
+
+    SetInterval(d time.Duration)               // Dynamically changes fetch interval
+    Resize(workers int) error                  // Dynamically resizes worker pool
+    ...
+}
+```
 
 > ---
 >
@@ -230,80 +310,222 @@ This mechanism must run in the background at a specified interval. The default i
 >
 > # WARNING
 
-## Important CLI Commands
+### Implement the following commands
+
+#### Start background fetching
+
+Starts the background process that periodically fetches and processes RSS feeds using a worker pool.
+
+```sh
+rsshub fetch
+```
+
+This command launches:
+
+- The RSS fetcher loop (ticker-based)
+- The worker pool for concurrent feed parsing and storage
+
+After executing this command, the application must log a confirmation message like:
+
+```sh
+The background process for fetching feeds has started (interval = 3 minutes, workers = 3)
+```
+
+**Important:**
+Only one instance of the background process can be running at a time.
+If you try to start it again while it’s already active, the application must log:
+
+```sh
+Background process is already running
+```
+
+or return an error like:
+
+```sh
+Error: aggregator already running
+```
+
+This is to prevent multiple fetchers from operating concurrently and duplicating work.
+
+#### Add new RSS feed
+
+Command adds a new RSS feed into PostgreSQL database.
 
 ```sh
 rsshub add --name "tech-crunch" --url "https://techcrunch.com/feed/"
 ```
 
-Adds a new RSS feed to PostgreSQL.
+#### Set RSS Fetch Interval
+
+Dynamically changes how often RSS feeds are fetched in the background.
 
 ```sh
+
 rsshub set-interval 2m
 ```
 
-Sets the interval at which RSS feeds are fetched (e.g., every 2 minutes).
+_Example: fetch feeds every 2 minutes._
+
+After executing this command, the application must log a confirmation message:
 
 ```sh
-rsshub set-workers 3
+Interval of fetching feeds changed from 3 minutes to 2 minutes
 ```
 
-Sets the number of workers.
+- This command updates the ticker interval without restarting the application.
+
+#### Set Number of Workers
+
+Dynamically resizes the background worker pool that processes RSS feeds concurrently.
+
+```sh
+
+rsshub set-workers 5
+```
+
+_Example: run 5 concurrent workers._
+
+After executing this command, the application must log a confirmation message:
+
+```sh
+Number of workers changed from 3 to 5
+```
+
+- This change takes effect immediately without restarting the application or interrupting the ongoing fetch loop.
+
+#### List available RSS feeds
+
+Command displays RSS feeds stored in the PostgreSQL database.
 
 ```sh
 rsshub list --num 10
 ```
 
-Displays a N feeds. If without option then the cammand show list of all feeds added.
+_Shows the 10 most recently added feeds. Without `--num`, shows all feeds._
+
+#### Delete RSS feed
+
+Command removes a feed from the PostgreSQL database by name.
 
 ```sh
 rsshub delete --name "tech-crunch"
 ```
 
-Deletes the RSS feed from PostgreSQL.
+_Example: delete the TechCrunch feed from storage._
+
+#### Show latest articles
+
+Command shows the latest articles from Redis or PostgreSQL by feed name.
 
 ```sh
 rsshub articles --feed-name "tech-crunch" --num 5
 ```
 
-Shows the latest N articles from Redis or the database by feed name. Default is 3 articles.
+_Shows 5 recent articles for the given feed. Default is 3 if `--num` is not provided._
+
+#### Show CLI help
+
+Command prints usage instructions and descriptions of all available commands.
 
 ```sh
 rsshub --help
 ```
 
-Displays help information for all available commands.
+_Example Usage:_
+
+```sh
+$ ./rsshub --help
+
+  Usage:
+    rsshub COMMAND [OPTIONS]
+
+  Common Commands:
+       add             add new RSS feed
+       set-interval    set RSS fetch interval
+       set-workers     set number of workers
+       list            list available RSS feeds
+       delete          delete RSS feed
+       articles        show latest articles
+```
+
+#### Gracefully Stopping the Aggregator
+
+To stop the running background process:
+
+Press `Ctrl+C` in the terminal where `rsshub` fetch is running
+
+OR
+
+Send a termination signal (e.g. `SIGINT`, `SIGTERM`) from another process
+
+On shutdown, the application will:
+
+- Cancel the background context
+- Gracefully stop the ticker and all workers
+- Log a confirmation message:
+
+```sh
+Graceful shutdown: aggregator stopped
+```
+
+### Example Workflow
+
+In one terminal:
+
+```sh
+# Start the aggregator
+$ ./rsshub fetch
+$ The background process for fetching feeds has started (interval = 3 minutes, workers = 3)
+```
+
+In another terminal: change settings
+
+```sh
+$ ./rsshub set-interval --duration 2m
+$ Interval of fetching feeds changed from 3 minutes to 2 minutes
+
+$ ./rsshub set-workers --count 4
+$ Number of workers changed from 3 to 5
+
+# To stop: go back to fetch terminal and press Ctrl+C
+```
+
+### Database
 
 #### PostgreSQL
 
-Tables:
+🗂 **Feeds Table** (`feeds`)
+Stores metadata about each RSS feed added to the system.
 
-1.  `feeds`
+| Field      | Type          | Description                     |
+| ---------- | ------------- | ------------------------------- |
+| id         | UUID (PK)     | Unique identifier for the feed  |
+| created_at | TIMESTAMP     | When the feed was added         |
+| updated_at | TIMESTAMP     | When the feed was last updated  |
+| name       | TEXT (unique) | Human-readable name of the feed |
+| url        | TEXT          | The RSS feed URL                |
 
-        | Field      | Type          |
-        | ---------- | ------------- |
-        | id         | UUID (PK)     |
-        | created_at | TIMESTAMP     |
-        | updated_at | TIMESTAMP     |
-        | name       | TEXT (unique) |
-        | url        | TEXT          |
+📝 This table is used to track all RSS sources the aggregator is monitoring. The url is used to fetch data, while the name is used to reference feeds via CLI commands.
 
-2.  `articles`
+📰 **Articles Table** (`articles`)
+Stores all articles parsed from the various RSS feeds.
 
-        | Field         | Type          |
-        | ------------- | ------------- |
-        | id            | UUID (PK)     |
-        | created_at    | TIMESTAMP     |
-        | updated_at    | TIMESTAMP     |
-        | title         | TEXT          |
-        | url           | TEXT          |
-        | published_at  | TIMESTAMP     |
-        | description   | TEXT          |
-        | feed_id       | UUID          |
+| Field        | Type      | Description                                |
+| ------------ | --------- | ------------------------------------------ |
+| id           | UUID (PK) | Unique identifier for the article          |
+| created_at   | TIMESTAMP | When the article was stored                |
+| updated_at   | TIMESTAMP | When the article was last modified         |
+| title        | TEXT      | Title of the article                       |
+| url          | TEXT      | Canonical URL of the article               |
+| published_at | TIMESTAMP | Original publication timestamp             |
+| description  | TEXT      | Short description or summary from RSS feed |
+| feed_id      | UUID      | Foreign key referencing feeds.id           |
+
+📝 This table holds all fetched articles and links them to their corresponding RSS feed. It ensures deduplication and supports querying recent posts per feed.
 
 > This is a standard instruction for tables. It's in your best interest to add fields.
 
-### Migrations
+#### Migrations
 
 Migrations are a set of versioned files that describe changes to the database schema (DDL): creating tables, modifying columns, adding indexes, etc.
 
@@ -379,8 +601,6 @@ migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/rss
 
 ```yaml
 cli_app:
-  host: localhost
-  port: 8080
   timer_interval: 3m
   workers_count: 3
 
@@ -398,8 +618,6 @@ redis:
 
 ```env
 # CLI App
-CLI_APP_HOST=localhost
-CLI_APP_PORT=8080
 CLI_APP_TIMER_INTERVAL=3m
 CLI_APP_WORKERS_COUNT=3
 
@@ -420,27 +638,10 @@ REDIS_PORT=6379
 
 Launches:
 
-- CLI (port: `8080`)
+- RSSHub (CLI application)
 - PostgreSQL (port: `5432`)
   - set username, password, db from `env/yaml`
 - Redis (port: `6379`)
-
-## Example Usage
-
-```sh
-$ ./rsshub --help
-
-  Usage:
-    rsshub COMMAND [OPTIONS]
-
-  Common Commands:
-       add             Adds a new RSS feed to PostgreSQL.
-       set-interval    Sets the interval at which RSS feeds are fetched (e.g., every 2 minutes).
-       set-workers     Sets the number of workers.
-       list            Shows a list of all the added feeds.
-       delete          Deletes the RSS feed from PostgreSQL.
-       articles        Shows the latest N articles from Redis or the database. By default -- 3 articles.
-```
 
 ## Recommendations from the Author
 
