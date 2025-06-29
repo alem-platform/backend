@@ -279,10 +279,36 @@ Number of workers changed from 3 to 5
 Command displays RSS feeds stored in the PostgreSQL database.
 
 ```sh
-rsshub list --num 10
+rsshub list --num 5
 ```
 
-_Shows the 10 most recently added feeds. Without `--num`, shows all feeds._
+_Shows the 5 most recently added feeds. Without `--num`, shows all feeds._
+
+Output format:
+
+```sh
+# Available RSS Feeds
+
+1. Name: tech-crunch
+   URL: https://techcrunch.com/feed/
+   Added: 2025-06-10 15:34
+
+2. Name: hacker-news
+   URL: https://news.ycombinator.com/rss
+   Added: 2025-06-10 15:37
+
+3. Name: bbc-world
+   URL: http://feeds.bbci.co.uk/news/world/rss.xml
+   Added: 2025-06-11 09:15
+
+4. Name: the-verge
+   URL: https://www.theverge.com/rss/index.xml
+   Added: 2025-06-12 13:50
+
+5. Name: ars-technica
+   URL: http://feeds.arstechnica.com/arstechnica/index
+   Added: 2025-06-13 08:25
+```
 
 #### Delete RSS feed
 
@@ -303,6 +329,27 @@ rsshub articles --feed-name "tech-crunch" --num 5
 ```
 
 _Shows 5 recent articles for the given feed. Default is 3 if `--num` is not provided._
+
+Output format:
+
+```sh
+Feed: tech-crunch
+
+1. [2025-06-18] Apple announces new M4 chips for MacBook Pro
+   https://techcrunch.com/apple-announces-m4/
+
+2. [2025-06-17] OpenAI launches GPT-5 with multimodal capabilities
+   https://techcrunch.com/openai-launches-gpt-5/
+
+3. [2025-06-16] Google unveils new privacy tools at I/O 2025
+   https://techcrunch.com/google-privacy-io-2025/
+
+4. [2025-06-15] TikTok introduces developer platform for integrations
+   https://techcrunch.com/tiktok-developer-platform/
+
+5. [2025-06-14] Microsoft Teams gets AI-powered meeting summarization
+   https://techcrunch.com/microsoft-teams-ai-summary/
+```
 
 #### Show CLI help
 
@@ -400,7 +447,7 @@ Stores all articles parsed from the various RSS feeds.
 | created_at   | TIMESTAMP | When the article was stored                |
 | updated_at   | TIMESTAMP | When the article was last modified         |
 | title        | TEXT      | Title of the article                       |
-| url          | TEXT      | Canonical URL of the article               |
+| link         | TEXT      | Canonical URL of the article               |
 | published_at | TIMESTAMP | Original publication timestamp             |
 | description  | TEXT      | Short description or summary from RSS feed |
 | feed_id      | UUID      | Foreign key referencing feeds.id           |
