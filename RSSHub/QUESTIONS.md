@@ -120,12 +120,7 @@
 - [ ] Yes
 - [ ] No
 
-### Redis is used for caching recent articles
-
-- [ ] Yes
-- [ ] No
-
-### Migrations are implemented using `golang-migrate`
+### Migrations are implemented
 
 - [ ] Yes
 - [ ] No
@@ -137,7 +132,7 @@
 - [ ] Yes
 - [ ] No
 
-### All services (RSSHub CLI, PostgreSQL, Redis) run and interact correctly in Docker
+### All services (RSSHub CLI, PostgreSQL) run and interact correctly in Docker
 
 - [ ] Yes
 - [ ] No

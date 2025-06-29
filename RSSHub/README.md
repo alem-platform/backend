@@ -5,7 +5,6 @@
 - Working with XML and RSS formats
 - Concurrency and channels
 - Worker Pool
-- Redis
 - PostgreSQL
 - Docker Compose
 
@@ -16,7 +15,6 @@ In this project, you will build a **CLI application — an [RSS](https://en.wiki
 - Provides a command-line interface (CLI)
 - Fetches and parses [RSS](https://en.wikipedia.org/wiki/RSS) feeds
 - Stores articles in PostgreSQL
-- Caches recent data in Redis
 - Aggregates RSS feeds using a worker pool in the background
 
 This is a service that collects publications from various sources that provide RSS feeds (news sites, blogs, forums). It helps users stay informed in one place without the need to visit each website manually.
@@ -25,7 +23,7 @@ Such a tool is useful for journalists, researchers, analysts, and anyone who wan
 
 ## Context
 
-You are developing a CLI application that periodically fetches articles from user-added RSS feeds and stores them in `PostgreSQL`. Repeated requests are served from `Redis`. You will also implement a mechanism responsible for background, parallel processing of RSS feeds. All services are deployed using `Docker Compose`.
+You are developing a CLI application that periodically fetches articles from user-added RSS feeds and stores them in `PostgreSQL`. You will also implement a mechanism responsible for background, parallel processing of RSS feeds. All services are deployed using `Docker Compose`.
 
 ## General Criteria
 
@@ -34,7 +32,7 @@ You are developing a CLI application that periodically fetches articles from use
 
 - Your program **MUST NOT** exit unexpectedly (e.g., due to nil pointer dereference, index out of range, etc.). If it does, you will receive a grade of `0` during the defense.
 
-- External packages are allowed only for working with `Redis` and `PostgreSQL`. Using any other external dependencies will result in a grade of `0`.
+- External packages are allowed only for working with `PostgreSQL`. Using any other external dependencies will result in a grade of `0`.
 
 - If an error occurs during startup (e.g., invalid command-line arguments), the program **MUST**:
 
@@ -65,119 +63,6 @@ Include a `docker-compose.yml` file that runs the following services:
 
 - RSSHub – a CLI application
 - PostgreSQL – for storing articles
-- Redis – for caching feeds
-
-### Architecture
-
-The project is designed using the principles of:
-
-| Practice                       | Justification                                            |
-| ------------------------------ | -------------------------------------------------------- |
-| Clean Architecture (Uncle Bob) | Infrastructure-independent core                          |
-| DDD (Domain-Driven Design)     | Clear delineation of entities, interfaces, and use-cases |
-| Hexagonal architecture         | Input/output ports and adapters                          |
-| `internal/` separation         | `internal/` hides realisation                            |
-| CLI/API decoupling             | CLI does not depend on repositories — only on services   |
-| Environment isolation          | Configuration in config/, initialization in container.go |
-
-### Directory Structure
-
-```
-rsshub/
-├── cmd/
-│   └── rsshub/
-│       └── main.go               # Entry point
-│
-├── internal/
-│   ├── app/                      # Application wiring (DI, configurations)
-│   │   └── app.go                # Initialization of services, adapters, env
-│   │
-│   ├── adapter/                  # External dependencies (infrastructure)
-│   │   ├── db/                   # PostgreSQL implementation
-│   │   ├── cache/                # Redis implementation
-│   │   ├── rss/                  # RSS parsers and fetcher
-│   │
-│   ├── domain/                   # Business Logic (DDD style)
-│   │   ├── model/                # Feed, Article
-│   │   ├── service/              # FeedService, Article Service
-│   │   └── interface/            # Infrastructure Interfaces (Input/Output Ports)
-│   │
-│   └── handler/                  # Input Interfaces (cli/http/etc)
-│       └── cli/                  # CLI commands
-│
-├── config/
-│   ├── config.yaml
-│   └── config.go                 # Загрузка конфигурации
-│
-├── migrations/                   # SQL миграции (для golang-migrate)
-│   └── ...
-│
-├── go.mod
-├── go.sum
-└── README.md
-```
-
-🧭 **Layer-by-Layer Description**
-
-1. `cmd/rsshub/main.go` — Entry point
-   - Responsible for launching the application
-   - Calls `Init()`, `Start()` or similar from `internal/app/app.go`
-
-- 🔒 Not allowed: business logic, database management
-- ✅ You can: only call a ready-built application
-
-2. `internal/app/` — Wiring Layer
-   - Coordinates and wires together all parts of the application.
-   - Initializes core components:
-     - Loads configuration (from env, files, or flags)
-     - Sets up `PostgreSQL` storage and `Redis` cache
-     - Constructs `domain` services (use cases)
-     - Prepares CLI and/or HTTP handlers
-   - Responsible for application lifecycle:
-     - Start the RSS aggregator (ticker + worker pool) in the background
-     - Handles `graceful shutdown` via context cancellation and signal handling
-   - Acts as the single entry point for assembling and running the system
-
-- ✅ May depend on all the inner layers
-- 🔒 You can't bring business logic here
-
-1. `internal/handler/{cli,http}` — Input Adapter Layer
-   - Accept commands from the user (CLI, HTTP, gRPC)
-   - Convert the input into calls to application services (`domain/service`)
-
-- ✅ They only know the interfaces and services
-- 🔒 They don't know about the database, Redis, or external dependencies
-
-4. `domain/service/` — Use-case layer (Application Layer)
-   - Implements business logic orchestration
-   - It works through interfaces (`interface`) — it doesn't know what's under them.
-
-- ✅ Depends only on `domain/port`
-- 🔒 Adapters cannot be imported, no infra
-
-5. `domain/interface/` - Interfaces (Port Layer)
-   - Determine what is needed for the service (for example: `FeedRepository`, `Cache`)
-   - They are used in both `service/` and implemented in `adapter/`
-
-- ✅ Interfaces only, can be used everywhere
-- 🔒 No logic, implementations, or third-party packages
-
-6. `domain/model/` — Entities (Domain Entities)
-   - `Feed`, `Article` — basic structures
-   - They contain possible validations and methods
-
-- ✅ Can be used anywhere
-- 🔒 No dependencies on external packages
-
-7. `adapter/` — Output Adapters (Outbound Adapter Layer)
-   - Implement interfaces from `interface/`
-   - Infrastructural things:
-     - PostgreSQL (`db/`)
-     - Redis (`cache/`)
-     - RSS fetcher (`rss/`)
-
-- ✅ May depend on external libraries
-- 🔒 Cannot be used in either domain/service or handler
 
 ### RSS
 
@@ -251,7 +136,7 @@ This mechanism must run in the background at a specified interval. The default i
 
    - Downloads the feed by its URL
    - Parses new articles
-   - Saves them to `Postgres` and caches `Redis`
+   - Saves them to `Postgres`
 
 4. The application should be able to change the ticker interval and size of workers without restarting the application.
 
@@ -339,12 +224,6 @@ If you try to start it again while it’s already active, the application must l
 Background process is already running
 ```
 
-or return an error like:
-
-```sh
-Error: aggregator already running
-```
-
 This is to prevent multiple fetchers from operating concurrently and duplicating work.
 
 #### Add new RSS feed
@@ -372,6 +251,7 @@ After executing this command, the application must log a confirmation message:
 Interval of fetching feeds changed from 3 minutes to 2 minutes
 ```
 
+- This command only works if the `rsshub fetch` command is running in another terminal
 - This command updates the ticker interval without restarting the application.
 
 #### Set Number of Workers
@@ -391,6 +271,7 @@ After executing this command, the application must log a confirmation message:
 Number of workers changed from 3 to 5
 ```
 
+- This command only works if the `rsshub fetch` command is running in another terminal
 - This change takes effect immediately without restarting the application or interrupting the ongoing fetch loop.
 
 #### List available RSS feeds
@@ -415,7 +296,7 @@ _Example: delete the TechCrunch feed from storage._
 
 #### Show latest articles
 
-Command shows the latest articles from Redis or PostgreSQL by feed name.
+Command shows the latest articles from PostgreSQL by feed name.
 
 ```sh
 rsshub articles --feed-name "tech-crunch" --num 5
@@ -446,6 +327,7 @@ $ ./rsshub --help
        list            list available RSS feeds
        delete          delete RSS feed
        articles        show latest articles
+       fetch           starts the background process that periodically fetches and processes RSS feeds using a worker pool
 ```
 
 #### Gracefully Stopping the Aggregator
@@ -531,20 +413,6 @@ Stores all articles parsed from the various RSS feeds.
 
 Migrations are a set of versioned files that describe changes to the database schema (DDL): creating tables, modifying columns, adding indexes, etc.
 
-The recommended tool is `golang-migrate/migrate`.
-
-Install:
-
-```sh
-go install github.com/golang-migrate/migrate/v4/cmd/migrate@latest
-```
-
-Check:
-
-```sh
-migrate -version
-```
-
 Example:
 
 ```sh
@@ -570,53 +438,9 @@ CREATE TABLE feeds (
 DROP TABLE IF EXISTS feeds;
 ```
 
-Useful commands:
-
-Create a new migration:
-
-```sh
-migrate create -ext sql -dir migrations -seq create_feeds_table
-```
-
-Application of migrations
-
-```sh
-migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/rsshub?sslmode=disable" up
-```
-
-Rollback migration
-
-```sh
-migrate -path ./db/migrations -database "postgres://user:pass@localhost:5432/rsshub?sslmode=disable" down
-```
-
-#### Redis
-
-- Key: `articles:<feed_name>`
-- Value: JSON list of the latest articles
-- TTL: 10 minutes
-- If Redis is unavailable — fallback to PostgreSQL with a warning.
-
 ### Initial Setup
 
 #### Configuration
-
-```yaml
-cli_app:
-  timer_interval: 3m
-  workers_count: 3
-
-postgres:
-  host: localhost
-  port: 5432
-  user: postgres
-  password: changem
-  dbname: rsshub
-
-redis:
-  host: localhost
-  port: 6379
-```
 
 ```env
 # CLI App
@@ -629,11 +453,6 @@ POSTGRES_PORT=5432
 POSTGRES_USER=postgres
 POSTGRES_PASSWORD=changem
 POSTGRES_DBNAME=rsshub
-
-# Redis
-REDIS_HOST=localhost
-REDIS_PORT=6379
-
 ```
 
 #### Docker Compose
@@ -642,8 +461,7 @@ Launches:
 
 - RSSHub (CLI application)
 - PostgreSQL (port: `5432`)
-  - set username, password, db from `env/yaml`
-- Redis (port: `6379`)
+  - set username, password, db from `env`
 
 ## Recommendations from the Author
 
@@ -651,7 +469,6 @@ Launches:
 - Implement an aggregation mechanism with a background timer
 - Add a worker pool for parallel feed processing
 - Use PostgreSQL for storage and configure database migrations
-- Add Redis for caching the latest articles
 - Create a `docker-compose.yml` file for local development
 - Finish by testing your application logic
 
@@ -668,7 +485,6 @@ Launches:
 
 For your own growth _(Future opportunities)_:
 
-- Add support for multiple users and allow each to subscribe to different feeds
 - Implement a Web API for external access
 - Add a Telegram bot to notify users about new articles
 
