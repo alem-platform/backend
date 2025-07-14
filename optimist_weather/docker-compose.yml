@@ -1,0 +1,35 @@
+version: '2'
+services:
+  redis__weather:
+    image: redis
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - optimist_weather
+    volumes:
+      - redis_data:/data
+
+  postgres_weather:
+    # TODO fill with weather data
+    image: postgres:latest
+    container_name: postgres_users
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "mrbelka12000"
+      POSTGRES_DB: "optimist_weather"
+      DATABASE_HOST: "localhost"
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgresData:/var/lib/postgresql/data
+    networks:
+      - optimist_weather
+
+volumes:
+  redis_data:
+  postgresData:
+
+networks:
+  optimist_weather:
+    driver: bridge
