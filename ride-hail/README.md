@@ -29,7 +29,7 @@ This is where advanced message patterns and real-time communication become essen
 - Your code MUST be written in accordance with [gofumpt](https://github.com/mvdan/gofumpt). If not, you will automatically receive a score of `0`.
 - Your program MUST compile successfully.
 - Your program MUST NOT crash unexpectedly (any panics: `nil-pointer dereference`, `index out of range`, etc.). If this happens, you will receive `0` points during defense.
-- Only built-in Go packages, `pgx/v5` PostgreSQL driver, the official AMQP client (`github.com/rabbitmq/amqp091-go`), and Gorilla WebSocket (`github.com/gorilla/websocket`) are allowed. If other packages are used, you will receive a score of `0`.
+- Only built-in Go packages, `pgx/v5` PostgreSQL driver, the official AMQP client (`github.com/rabbitmq/amqp091-go`), Gorilla WebSocket (`github.com/gorilla/websocket`), and JSON Web Tokens (`github.com/golang-jwt/jwt/v5`) are allowed. If other packages are used, you will receive a score of `0`.
 - RabbitMQ server MUST be running and available for connection.
 - PostgreSQL database MUST be running and accessible for all services
 - All RabbitMQ connections must handle reconnection scenarios
