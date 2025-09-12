@@ -139,137 +139,27 @@ Three microservices communicate through PostgreSQL and RabbitMQ to handle the co
 
 **PHASE 1: RIDE REQUEST INITIATION**
 
-```mermaid
-sequenceDiagram
-    actor Passenger as Passenger
-    participant WS_R as WebSocket<br/>(Passenger)
-    participant RS as Ride Service
-    participant RMQ as RabbitMQ
-
-    %% Phase 1: Ride Request Initiation
-    Note over Passenger,RMQ: PHASE 1: RIDE REQUEST INITIATION
-    Passenger->>RS: 1. POST /rides<br/>(pickup, destination, ride_type)
-    Note over RS: 2. Store ride in DB<br/>status='REQUESTED'<br/>Calculate fare estimate
-    RS-->>Passenger: Ride created<br/>(ride_id, estimated_fare)
-    RS->>RMQ: 3. Publish to ride_topic<br/>(routing: ride.request.{type})
-```
+![phase1.png](phase1.png)
 
 **PHASE 2: DRIVER MATCHING PROCESS**
 
-```mermaid
-sequenceDiagram
-    participant RMQ as RabbitMQ
-    participant DLS as Driver & Location<br/>Service
-    participant WS_D as WebSocket<br/>(Driver)
-    actor Driver as Driver
-
-    %% Phase 2: Driver Matching Process
-    Note over RMQ,Driver: PHASE 2: DRIVER MATCHING PROCESS
-    RMQ->>DLS: 4. Consume from driver_matching queue
-    Note over DLS: Query available drivers<br/>using PostGIS geospatial<br/>Execute matching algorithm<br/>(distance, rating, vehicle type)
-
-    loop Top 3-5 Drivers
-        DLS->>WS_D: 5. Send ride offer<br/>(30s timeout)
-        WS_D->>Driver: Ride offer notification
-        Driver->>WS_D: 6. Accept/Reject offer
-        WS_D->>DLS: Driver response
-    end
-
-    DLS->>RMQ: Publish to driver_topic<br/>(routing: driver.response.{ride_id})
-```
+![phase2.png](phase2.png)
 
 **PHASE 3: RIDE CONFIRMATION AND SETUP**
 
-```mermaid
-sequenceDiagram
-    actor Passenger as Passenger
-    participant WS_R as WebSocket<br/>(Passenger)
-    participant RS as Ride Service
-    participant RMQ as RabbitMQ
-    participant DLS as Driver & Location<br/>Service
-    participant WS_D as WebSocket<br/>(Driver)
-    actor Driver as Driver
+![phase3.png](phase3.png)
 
-    %% Phase 3: Ride Confirmation and Setup
-    Note over Passenger,Driver: PHASE 3: RIDE CONFIRMATION AND SETUP
-    RMQ->>RS: Driver acceptance<br/> message
-    Note over RS: 7. Update ride in DB<br/>status='MATCHED'<br/>assign driver_id
-    RS->>WS_R: 8. Send match <br/>notification
-    WS_R->>Passenger: Driver details, <br/>ETA, vehicle info
-    RS->>RMQ: Publish status <br/>update
-    RMQ->>DLS: Match <br/>confirmation
-    DLS->>WS_D: 9. Send ride <br/>details
-    WS_D->>Driver: Pickup location,<br/> navigation
-```
 
 **PHASE 4: REAL-TIME TRACKING AND UPDATES**
 
-```mermaid
-sequenceDiagram
-    actor Passenger as Passenger
-    participant WS_R as WebSocket<br/>(Passenger)
-    participant RS as Ride Service
-    participant RMQ as RabbitMQ
-    participant DLS as Driver & Location<br/>Service
-    participant WS_D as WebSocket<br/>(Driver)
-    actor Driver as Driver
 
-    %% Phase 4: Real-time Tracking and Updates
-    Note over Passenger,Driver: PHASE 4: REAL-TIME TRACKING AND UPDATES
-    loop Every 3-5 seconds
-        Driver->>WS_D: GPS location<br/> update
-        WS_D->>DLS: 10. Location<br/> data
-        Note over DLS: Update coordinates<br/>in database
-        DLS->>RMQ: Publish to<br/> location_fanout
-        RMQ-->>RS: 11. Location<br/> update
-        RS->>WS_R: Driver location,<br/> ETA
-        WS_R->>Passenger: Real-time<br/> position
-    end
+![phase4.png](phase4.png)
 
-    %% Driver Arrival
-    Driver->>WS_D: Arrived <br/>at pickup
-    WS_D->>DLS: Status <br/>update
-    DLS->>RMQ: 12. Publish <br/>status change
-    RMQ->>RS: Status <br/>update
-    Note over RS: Update ride in DB<br/>status='ARRIVED'
-    RS->>WS_R: Driver arrived<br/> notification
-    WS_R->>Passenger: Driver has<br/> arrived
-```
 
 **PHASE 5: RIDE EXECUTION AND COMPLETION**
 
-```mermaid
-sequenceDiagram
-    actor Passenger as Passenger
-    participant WS_R as WebSocket<br/>(Passenger)
-    participant RS as Ride Service
-    participant RMQ as RabbitMQ
-    participant DLS as Driver & Location<br/>Service
-    participant WS_D as WebSocket<br/>(Driver)
-    actor Driver as Driver
+![phase5.png](phase5.png)
 
-    %% Phase 5: Ride Execution and Completion
-    Note over Passenger,Driver: PHASE 5: RIDE EXECUTION AND COMPLETION
-    Driver->>DLS: POST <br/>/drivers/{id}/start
-    Note over DLS: Update driver status<br/>to 'BUSY'
-    DLS->>RMQ: Publish status<br/> change
-    RMQ->>RS: Ride <br/>started
-    Note over RS: Update ride in DB<br/>status='IN_PROGRESS'
-    RS->>WS_R: Ride <br/>in progress
-    WS_R->>Passenger: Trip<br/> started
-
-
-    %% Ride Completion
-    Driver->>DLS: POST /drivers/{id}/complete<br/>(final location, distance, duration)
-    Note over DLS: Update driver status<br/>to 'AVAILABLE'
-    DLS->>RMQ: Publish <br/>completion event
-    RMQ->>RS: 13. Ride <br/>completed
-    Note over RS: Update ride in DB<br/>status='COMPLETED'<br/>Calculate final fare
-    RS->>WS_R: Send completion<br/> notification
-    WS_R->>Passenger: Trip summary,<br/> receipt, rating prompt
-    RS->>WS_D: Send completion<br/> notification
-    WS_D->>Driver: Earnings, <br/>rating prompt
-```
 
 ## Services API and Events Overview
 
