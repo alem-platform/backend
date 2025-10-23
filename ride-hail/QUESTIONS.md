@@ -1,4 +1,3 @@
-
 ## Project Setup and Compilation
 ### Does the program compile successfully with `go build -o ride-hail-system .`?
 - [ ] Yes
